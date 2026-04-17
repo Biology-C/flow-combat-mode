@@ -16,6 +16,7 @@ const SENTENCES = [
 ];
 
 const MD_LESSONS = [
+  // ── 標題 ──
   {
     name: '一級標題',
     syntax: '# 標題文字',
@@ -37,6 +38,7 @@ const MD_LESSONS = [
     hint: 'Tip：三個 # 號後面加空格',
     target: '### 使用方式說明',
   },
+  // ── 強調 ──
   {
     name: '粗體文字',
     syntax: '**文字**',
@@ -52,6 +54,21 @@ const MD_LESSONS = [
     target: '這是 *斜體強調* 的效果展示',
   },
   {
+    name: '粗斜體',
+    syntax: '***文字***',
+    desc: '用三個星號 <code>***</code> 包住文字，同時呈現粗體與斜體，表示最強調的內容。',
+    hint: 'Tip：前後各三個星號，不能有空格',
+    target: '***心流狀態*** 是高效工作的關鍵',
+  },
+  {
+    name: '刪除線',
+    syntax: '~~文字~~',
+    desc: '用兩個波浪號 <code>~~</code> 包住文字，顯示刪除線，常用於表示已修正或過時的內容。',
+    hint: 'Tip：波浪號 ~ 在鍵盤左上角 Esc 下方',
+    target: '原本 ~~每天三小時~~ 改為彈性制',
+  },
+  // ── 列表 ──
+  {
     name: '無序列表',
     syntax: '- 項目文字',
     desc: '在行首加 <code>-</code> 和空格，建立無序列表（圓點項目清單）。',
@@ -66,12 +83,42 @@ const MD_LESSONS = [
     target: '1. 設定本次寫作主題',
   },
   {
+    name: '巢狀列表',
+    syntax: '  - 子項目',
+    desc: '在列表項目前加兩個空格，建立縮排的子清單，呈現層級結構。',
+    hint: 'Tip：行首必須有兩個空格，再加減號和空格',
+    target: '  - 這是縮排的子項目',
+  },
+  {
+    name: '待辦清單（未完成）',
+    syntax: '- [ ] 任務',
+    desc: '減號後加 <code>[ ]</code>（空方括號加空格），建立未完成的待辦事項，常用於 GitHub 任務追蹤。',
+    hint: 'Tip：方括號內是一個空格，格式為 - [ ] 任務',
+    target: '- [ ] 完成今日寫作目標',
+  },
+  {
+    name: '待辦清單（已完成）',
+    syntax: '- [x] 任務',
+    desc: '方括號內放 <code>x</code>，將待辦事項標記為已完成。',
+    hint: 'Tip：x 可以是大寫 X 或小寫 x',
+    target: '- [x] 學會基礎 Markdown 語法',
+  },
+  // ── 引用與分隔 ──
+  {
     name: '引用區塊',
     syntax: '> 引用文字',
     desc: '在行首加 <code>&gt;</code> 建立引用區塊，常用於名言、重要引述。',
     hint: 'Tip：> 符號後面加一個空格',
     target: '> 讓每次敲擊都充滿意義',
   },
+  {
+    name: '水平分隔線',
+    syntax: '---',
+    desc: '單獨一行輸入三個減號 <code>---</code>，建立水平分隔線，用於分隔段落。',
+    hint: 'Tip：只需三個減號，單獨一行，不能加其他文字',
+    target: '---',
+  },
+  // ── 程式碼 ──
   {
     name: '行內程式碼',
     syntax: '`程式碼`',
@@ -80,11 +127,63 @@ const MD_LESSONS = [
     target: '按下 `Enter` 鍵送出訊息',
   },
   {
-    name: '水平分隔線',
-    syntax: '---',
-    desc: '單獨一行輸入三個減號 <code>---</code>，建立水平分隔線，用於分隔段落。',
-    hint: 'Tip：只需三個減號，單獨一行，不能加其他文字',
-    target: '---',
+    name: '程式碼區塊',
+    syntax: '```語言名稱',
+    desc: '三個反引號開頭，後面加程式語言名稱（如 javascript、python），用於多行程式碼展示，結束時再打一行 <code>```</code>。',
+    hint: 'Tip：反引號連打三個，後面緊接語言名稱，不加空格',
+    target: '```javascript',
+  },
+  // ── 連結與圖片 ──
+  {
+    name: '超連結',
+    syntax: '[顯示文字](網址)',
+    desc: '方括號 <code>[ ]</code> 放顯示文字，緊接圓括號 <code>( )</code> 放網址，建立超連結。',
+    hint: 'Tip：方括號和圓括號之間不能有空格',
+    target: '[Markdown 指南](https://markdown.tw)',
+  },
+  {
+    name: '圖片語法',
+    syntax: '![說明文字](圖片路徑)',
+    desc: '與連結語法相同，但最前面加上驚嘆號 <code>!</code>，用來嵌入圖片。',
+    hint: 'Tip：驚嘆號 ! 緊接在方括號前，中間沒有空格',
+    target: '![封面圖片](cover.png)',
+  },
+  // ── 表格 ──
+  {
+    name: '表格標題行',
+    syntax: '| 欄位 | 欄位 |',
+    desc: '用豎線 <code>|</code> 分隔欄位名稱，建立表格的標題行。豎線在鍵盤 Shift+\\ 或 Enter 右邊。',
+    hint: 'Tip：每個欄位名稱前後各一個豎線，前後加空格更好看',
+    target: '| 語法 | 功能 | 範例 |',
+  },
+  {
+    name: '表格分隔行',
+    syntax: '| --- | --- |',
+    desc: '標題行下面必須接一行分隔行，每欄用三個減號代表，告訴渲染器這是表格。',
+    hint: 'Tip：:--- 左對齊、---: 右對齊、:---: 置中對齊',
+    target: '| --- | --- | --- |',
+  },
+  // ── 組合練習 ──
+  {
+    name: '組合：標題＋粗體',
+    syntax: '## **文字**',
+    desc: '標題與強調語法可以組合使用，讓標題內的關鍵詞更加突出。',
+    hint: 'Tip：在標題語法後面直接使用行內格式語法',
+    target: '## **重點學習筆記**',
+  },
+  {
+    name: '組合：列表＋程式碼',
+    syntax: '- 含 `code` 的列表',
+    desc: '列表項目中可以包含行內程式碼，常用於技術文件的操作步驟說明。',
+    hint: 'Tip：行內語法可以在任何段落中自由組合',
+    target: '- 按 `Ctrl+S` 儲存檔案',
+  },
+  {
+    name: '組合：引用＋斜體',
+    syntax: '> *引用文字*',
+    desc: '引用區塊內可以使用行內格式，讓引用的名言更具視覺層次。',
+    hint: 'Tip：引用符號和行內語法可以自由組合',
+    target: '> *每一次練習都是進步的積累*',
   },
 ];
 
@@ -1189,9 +1288,12 @@ function escLine(s) {
 // ═════════════════════════════════════
 
 function applyInlineMD(text) {
+  text = text.replace(/\*\*\*([^*\n]+)\*\*\*/g, '<strong><em>$1</em></strong>');
   text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  text = text.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
   text = text.replace(/`([^`\n]+)`/g, '<code class="md-code-inline">$1</code>');
+  text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<span class="md-img-placeholder">🖼 $1</span>');
   text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" class="md-link" onclick="return false">$1</a>');
   return text;
 }
@@ -1202,15 +1304,28 @@ function renderMDHTML(text) {
   let html = '';
   for (const raw of lines) {
     const l = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    if      (/^### /.test(l)) html += '<h3>' + applyInlineMD(l.slice(4)) + '</h3>';
-    else if (/^## /.test(l))  html += '<h2>' + applyInlineMD(l.slice(3)) + '</h2>';
-    else if (/^# /.test(l))   html += '<h1>' + applyInlineMD(l.slice(2)) + '</h1>';
-    else if (/^[-*+] /.test(l)) html += '<ul><li>' + applyInlineMD(l.slice(2)) + '</li></ul>';
-    else if (/^\d+\. /.test(l)) html += '<ol><li>' + applyInlineMD(l.replace(/^\d+\. /, '')) + '</li></ol>';
-    else if (/^> /.test(l))   html += '<blockquote>' + applyInlineMD(l.slice(2)) + '</blockquote>';
-    else if (/^---+$/.test(l))  html += '<hr class="md-hr">';
-    else if (l === '')          html += '<br>';
-    else                        html += '<p>' + applyInlineMD(l) + '</p>';
+    if      (/^### /.test(l))          html += '<h3>' + applyInlineMD(l.slice(4)) + '</h3>';
+    else if (/^## /.test(l))           html += '<h2>' + applyInlineMD(l.slice(3)) + '</h2>';
+    else if (/^# /.test(l))            html += '<h1>' + applyInlineMD(l.slice(2)) + '</h1>';
+    else if (/^- \[x\] /i.test(l))     html += '<ul class="task-list"><li class="task-done">☑ ' + applyInlineMD(l.slice(6)) + '</li></ul>';
+    else if (/^- \[ \] /.test(l))      html += '<ul class="task-list"><li class="task-todo">☐ ' + applyInlineMD(l.slice(6)) + '</li></ul>';
+    else if (/^ {2}[-*+] /.test(l))    html += '<ul class="nested-list"><li>' + applyInlineMD(l.replace(/^ +[-*+] /, '')) + '</li></ul>';
+    else if (/^[-*+] /.test(l))        html += '<ul><li>' + applyInlineMD(l.slice(2)) + '</li></ul>';
+    else if (/^\d+\. /.test(l))        html += '<ol><li>' + applyInlineMD(l.replace(/^\d+\. /, '')) + '</li></ol>';
+    else if (/^> /.test(l))            html += '<blockquote>' + applyInlineMD(l.slice(2)) + '</blockquote>';
+    else if (/^---+$/.test(l))         html += '<hr class="md-hr">';
+    else if (/^```(.*)$/.test(l)) {
+      const lang = l.slice(3).trim();
+      html += '<div class="md-code-fence">{ ' + (lang || '程式碼區塊') + ' }</div>';
+    }
+    else if (/^\|.+\|/.test(l)) {
+      const cells = l.split('|').slice(1, -1);
+      const isSep = cells.every(c => /^[-: ]+$/.test(c.trim()));
+      if (isSep) html += '<div class="md-table-sep">' + cells.map(() => '———').join(' | ') + '</div>';
+      else       html += '<table class="md-table"><tr>' + cells.map(c => '<td>' + applyInlineMD(c.trim()) + '</td>').join('') + '</tr></table>';
+    }
+    else if (l === '')                 html += '<br>';
+    else                               html += '<p>' + applyInlineMD(l) + '</p>';
   }
   return html;
 }
