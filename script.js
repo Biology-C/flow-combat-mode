@@ -1221,7 +1221,7 @@ function renderMDInput(committed, composing) {
     inputHtml += '<span class="char ' + cls + spawn + '">' + esc(typedChars[i]) + '</span>';
   }
   if (composing) inputHtml += '<span class="composing">' + esc(composing) + '</span>';
-  if (typedLen < targetChars.length) inputHtml += '<span class="cursor"></span>';
+  if (!composing) inputHtml += '<span class="cursor"></span>';
   mdInputDisp.innerHTML = inputHtml;
 
   let targetHtml = '';
