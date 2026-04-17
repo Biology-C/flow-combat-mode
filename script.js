@@ -412,18 +412,20 @@ document.addEventListener('mouseup', () => {
   dragStartY = null;
 });
 
-// ── 選取變化時更新反白顯示 ──
-hiddenInput.addEventListener('select', () => {
-  if (mode === 'MD') renderMDInput(hiddenInput.value, isComposing ? composingText : '');
-  else if (isFreeLike()) renderFree(hiddenInput.value, isComposing ? composingText : '', false);
-});
+// ── 游標/選取變化時重繪（所有模式統一）──
+function rerenderCurrent(composing) {
+  const v = hiddenInput.value;
+  const c = composing || (isComposing ? composingText : '');
+  if      (mode === 'MD')   renderMDInput(v, c);
+  else if (mode === 'TEST') renderTest(v, c);
+  else if (isFreeLike())    renderFree(v, c);
+}
 
-// 方向鍵、Shift 選取、Home/End 等移動游標時刷新顯示
+hiddenInput.addEventListener('select', () => rerenderCurrent(''));
+
 hiddenInput.addEventListener('keyup', (e) => {
   const nav = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Shift'];
-  if (!nav.includes(e.key) && !e.shiftKey) return;
-  if (mode === 'MD') renderMDInput(hiddenInput.value, isComposing ? composingText : '');
-  else if (isFreeLike()) renderFree(hiddenInput.value, isComposing ? composingText : '', false);
+  if (nav.includes(e.key) || e.shiftKey) rerenderCurrent('');
 });
 
 function handleFreeChange(committed, wasDelete) {
@@ -502,17 +504,24 @@ function renderTest(committed, composing) {
   const targetChars = [...currentTarget];
   const typedChars = [...committed];
   const typedLen = typedChars.length;
+  const sel = getSelection();
+  const cursorPos = sel.start;
 
   // 輸入區：已打的字
   let inputHtml = '';
+  let cursorInserted = false;
   for (let i = 0; i < typedLen; i++) {
+    if (i === cursorPos && sel.start === sel.end && !composing && !cursorInserted) {
+      inputHtml += '<span class="cursor"></span>';
+      cursorInserted = true;
+    }
     const ok = targetChars[i] !== undefined && typedChars[i] === targetChars[i];
     const cls = ok ? 'correct' : 'wrong';
     const spawn = (i === typedLen - 1 && !composing) ? ' char-spawn' : '';
     inputHtml += '<span class="char ' + cls + spawn + '">' + esc(typedChars[i]) + '</span>';
   }
   if (composing) inputHtml += '<span class="composing">' + esc(composing) + '</span>';
-  if (typedLen < targetChars.length) inputHtml += '<span class="cursor"></span>';
+  if (!cursorInserted) inputHtml += '<span class="cursor"></span>';
   testInputDisplay.innerHTML = inputHtml;
 
   // 目標區：標示進度（已完成=暗淡，目前=高亮，未打=一般灰）
@@ -1211,11 +1220,16 @@ function renderMDInput(committed, composing) {
   const targetChars = [...lesson.target];
   const typedChars = [...committed];
   const typedLen = typedChars.length;
-  const cursorPos = [...committed.slice(0, hiddenInput.selectionStart)].length;
+  const sel = getSelection();
+  const cursorPos = sel.start;
 
   let inputHtml = '';
+  let cursorInserted = false;
   for (let i = 0; i < typedLen; i++) {
-    if (!composing && i === cursorPos) inputHtml += '<span class="cursor"></span>';
+    if (i === cursorPos && sel.start === sel.end && !composing && !cursorInserted) {
+      inputHtml += '<span class="cursor"></span>';
+      cursorInserted = true;
+    }
     const ok = targetChars[i] !== undefined && typedChars[i] === targetChars[i];
     const cls = ok ? 'correct' : 'wrong';
     const spawn = (i === typedLen - 1 && !composing) ? ' char-spawn' : '';
@@ -1223,11 +1237,8 @@ function renderMDInput(committed, composing) {
     const display = isSpace ? '<span class="char-space">·</span>' : esc(typedChars[i]);
     inputHtml += '<span class="char ' + cls + spawn + '">' + display + '</span>';
   }
-  if (composing) {
-    inputHtml += '<span class="composing">' + esc(composing) + '</span>';
-  }
-  // cursor at end when at end or composing
-  if (composing || cursorPos >= typedLen) inputHtml += '<span class="cursor"></span>';
+  if (composing) inputHtml += '<span class="composing">' + esc(composing) + '</span>';
+  if (!cursorInserted) inputHtml += '<span class="cursor"></span>';
   mdInputDisp.innerHTML = inputHtml;
 
   let targetHtml = '';
