@@ -313,9 +313,14 @@ function renderFree(committed, composing, autoScroll) {
 function scrollFreeToCenter() {
   const cursor = inputDisplay.querySelector('.cursor');
   if (!cursor) return;
-  const areaH = freeArea.clientHeight;
-  const cursorTop = cursor.offsetTop;
-  freeArea.scrollTo({ top: cursorTop - areaH * 0.5, behavior: 'smooth' });
+  
+  const cursorRect = cursor.getBoundingClientRect();
+  const areaRect = freeArea.getBoundingClientRect();
+  
+  const cursorCenter = cursorRect.top + cursorRect.height / 2;
+  const areaCenter = areaRect.top + areaRect.height / 2;
+  
+  freeArea.scrollBy({ top: cursorCenter - areaCenter, behavior: 'smooth' });
 }
 
 // ── 手動捲動：滑鼠滾輪 + 拖曳 ──
