@@ -637,7 +637,7 @@ function loadSentence(idx) {
   lastCommittedValue = '';
   renderRoller();
   renderTest('', '');
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 }
 
 function renderRoller() {
@@ -737,7 +737,7 @@ hiddenInput.addEventListener('keydown', (e) => {
 document.addEventListener('click', (e) => {
   if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
   if (zenPhase === 'scraper') zenKeywordInput.focus();
-  else hiddenInput.focus();
+  else hiddenInput.focus({ preventScroll: true });
 });
 
 // ═════════════════════════════════════
@@ -881,7 +881,7 @@ function unlockZenTyping() {
   hiddenInput.value = '';
   prevText = '';
   lastCommittedValue = '';
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 
   // Topic bar
   zenTopicBar.textContent = zenTopic;
@@ -943,7 +943,7 @@ btnZenTimerMode.addEventListener('click', (e) => {
   zenTimerMode = zenTimerMode === 'stopwatch' ? 'pomodoro' : 'stopwatch';
   btnZenTimerMode.textContent = zenTimerMode === 'stopwatch' ? '⏱' : '🍅';
   if (zenPhase === 'typing') startZenTimer();
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 });
 
 // ── ZEN Cleanup ──
@@ -988,7 +988,7 @@ function showZenNotify(mins) {
 btnZenDismiss.addEventListener('click', (e) => {
   e.stopPropagation();
   zenNotify.classList.add('hidden');
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 });
 
 btnZenReport.addEventListener('click', (e) => {
@@ -1010,7 +1010,7 @@ function showZenReport() {
 btnZenReportClose.addEventListener('click', (e) => {
   e.stopPropagation();
   zenReportOverlay.classList.add('hidden');
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 });
 
 function renderReportChart() {
@@ -1356,7 +1356,7 @@ function loadMDLesson(idx) {
   btnMDPrev.style.visibility = idx > 0 ? 'visible' : 'hidden';
   btnMDNext.style.visibility = idx < MD_LESSONS.length - 1 ? 'visible' : 'hidden';
 
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 }
 
 function cleanupMD() {
@@ -1436,7 +1436,7 @@ function setMode(targetMode) {
   }
   combo = 0; score = 0;
   updateHUD();
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 }
 
 btnMode.addEventListener('click', (e) => {
@@ -1481,7 +1481,7 @@ btnRoller.addEventListener('click', (e) => {
   rollerOn = !rollerOn;
   freeArea.classList.toggle('roller-on', rollerOn);
   btnRoller.classList.toggle('active', rollerOn);
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 });
 
 // ── Theme Toggle ──
@@ -1491,7 +1491,7 @@ btnTheme.addEventListener('click', (e) => {
   themeBW = !themeBW;
   document.body.classList.toggle('theme-bw', themeBW);
   btnTheme.classList.toggle('active', themeBW);
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 });
 
 // ── Mute ──
@@ -1618,7 +1618,7 @@ function finishTutorial() {
   tutorialCelebrate.classList.add('show');
   setTimeout(() => tutorialCelebrate.classList.add('hidden'), 1200);
 
-  hiddenInput.focus();
+  hiddenInput.focus({ preventScroll: true });
 }
 
 btnTutorialNext.addEventListener('click', (e) => {
@@ -1635,5 +1635,5 @@ btnTutorialSkip.addEventListener('click', (e) => {
 // ── Init ──
 updateHUD();
 renderFree('', '', false);
-hiddenInput.focus();
+hiddenInput.focus({ preventScroll: true });
 startTutorial();
