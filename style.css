@@ -227,7 +227,7 @@ html, body {
 }
 
 #hidden-input {
-  position: absolute;
+  position: fixed;
   top: -9999px; left: -9999px;
   width: 1px; height: 1px;
   opacity: 0;
