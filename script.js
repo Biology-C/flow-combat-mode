@@ -1218,10 +1218,14 @@ function renderMDInput(committed, composing) {
     const ok = targetChars[i] !== undefined && typedChars[i] === targetChars[i];
     const cls = ok ? 'correct' : 'wrong';
     const spawn = (i === typedLen - 1 && !composing) ? ' char-spawn' : '';
-    inputHtml += '<span class="char ' + cls + spawn + '">' + esc(typedChars[i]) + '</span>';
+    const isSpace = typedChars[i] === ' ';
+    const display = isSpace ? '<span class="char-space">·</span>' : esc(typedChars[i]);
+    inputHtml += '<span class="char ' + cls + spawn + '">' + display + '</span>';
   }
-  if (composing) inputHtml += '<span class="composing">' + esc(composing) + '</span>';
-  if (!composing) inputHtml += '<span class="cursor"></span>';
+  if (composing) {
+    inputHtml += '<span class="composing">' + esc(composing) + '</span>';
+  }
+  inputHtml += '<span class="cursor"></span>';
   mdInputDisp.innerHTML = inputHtml;
 
   let targetHtml = '';

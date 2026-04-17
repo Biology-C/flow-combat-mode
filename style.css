@@ -431,17 +431,32 @@ body.theme-bw .char.selected {
 
 .composing {
   color: var(--accent-blue);
-  opacity: 0.6;
+  opacity: 0.85;
   border-bottom: 2px dashed var(--accent-blue);
 }
 
 .cursor {
   display: inline-block;
-  width: 3px; height: 1.1em;
+  width: 2px; height: 1.15em;
   background: var(--accent-blue);
   vertical-align: text-bottom;
-  animation: blink 1s step-end infinite;
-  margin-left: 1px;
+  animation: blink 0.8s step-end infinite;
+  margin: 0 1px;
+}
+
+/* MD mode: wider, more visible cursor */
+#md-input-display .cursor {
+  width: 3px;
+  height: 1.2em;
+  background: var(--accent-gold);
+  box-shadow: 0 0 6px var(--accent-gold);
+}
+
+/* Space placeholder in MD input */
+.char-space {
+  color: rgba(255,255,255,0.25);
+  font-size: 0.7em;
+  vertical-align: middle;
 }
 
 @keyframes blink { 50% { opacity: 0; } }
@@ -1249,3 +1264,5 @@ body.theme-bw #md-preview-panel { background: rgba(0,0,0,0.04); border-color: rg
 body.theme-bw #md-syntax-example { background: rgba(0,0,0,0.06); }
 body.theme-bw .md-hr { border-top-color: rgba(0,0,0,0.15); }
 body.theme-bw .md-panel-divider { background: rgba(0,0,0,0.1); }
+body.theme-bw .char-space { color: rgba(0,0,0,0.3); }
+body.theme-bw #md-input-display .cursor { background: #b07800; box-shadow: none; }
