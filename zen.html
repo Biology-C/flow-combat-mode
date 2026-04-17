@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZEN — Flow Combat Mode</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #2a3044;
+      --surface: #343a50;
+      --text: #dce0ea;
+      --text-dim: #8890aa;
+      --accent-blue: #6ea4d4;
+      --accent-green: #7ec4a3;
+      --accent-gold: #d4a76e;
+      --accent-red: #d47070;
+      --hud-bg: rgba(40,46,66,0.88);
+    }
+    body.theme-bw {
+      --bg: #f5f5f5;
+      --surface: #e8e8e8;
+      --text: #1a1a1a;
+      --text-dim: #999;
+      --accent-blue: #4a90c4;
+      --accent-green: #3a8a5a;
+      --accent-gold: #b08030;
+      --accent-red: #c04040;
+      --hud-bg: rgba(240,240,240,0.92);
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px;
+    }
+
+    #fcm-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    #fcm-container {
+      position: relative;
+      width: 100%;
+      height: 680px;
+      background: var(--bg);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.2);
+    }
+
+    .hidden { display: none !important; }
+
+    /* HUD */
+    #hud {
+      position: sticky; top: 0; left: 0; right: 0;
+      height: 80px; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: var(--hud-bg);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      user-select: none;
+      transition: background 0.3s;
+    }
+    #hud-left, #hud-center, #hud-right {
+      display: flex; align-items: center; gap: 16px;
+    }
+    #hud-right button {
+      padding: 8px 18px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      font-size: 15px; letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #hud-right button:hover { background: rgba(255,255,255,0.12); }
+    #hud-right button.active {
+      background: rgba(255,255,255,0.18);
+      border-color: var(--accent-blue);
+    }
+
+    /* ZEN Timer */
+    #zen-timer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #zen-timer-value {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    #btn-zen-timer-mode {
+      padding: 5px 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #btn-zen-timer-mode:hover { background: rgba(255,255,255,0.06); }
+
+    /* Typing Area */
+    #typing-area {
+      position: relative;
+      width: 100%;
+      height: calc(680px - 80px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6%;
+    }
+    #hidden-input {
+      position: absolute;
+      top: -9999px; left: -9999px;
+      width: 1px; height: 1px;
+      opacity: 0;
+    }
+
+    /* Free area — no roller effect */
+    #free-area {
+      width: 100%;
+      max-width: 900px;
+      height: 100%;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      position: relative;
+      scrollbar-width: none;
+      cursor: grab;
+    }
+    #free-area::-webkit-scrollbar { display: none; }
+    #free-area:active { cursor: grabbing; }
+
+    #input-display {
+      font-size: 36px;
+      line-height: 2;
+      letter-spacing: 3px;
+      text-align: left;
+      width: 100%;
+      padding: 200px 0 200px 0;
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+
+    /* Char & cursor */
+    .composing {
+      color: var(--accent-blue);
+      opacity: 0.6;
+      border-bottom: 2px dashed var(--accent-blue);
+    }
+    .cursor {
+      display: inline-block;
+      width: 3px; height: 1.1em;
+      background: var(--accent-blue);
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+      margin-left: 1px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Markdown highlights */
+    .md-h1 { font-size: 1.6em; font-weight: 800; color: var(--accent-gold); }
+    .md-h2 { font-size: 1.3em; font-weight: 700; color: var(--accent-gold); opacity: 0.85; }
+    .md-h3 { font-size: 1.1em; font-weight: 600; color: var(--accent-gold); opacity: 0.7; }
+    .md-bold { font-weight: 800; color: var(--text); }
+    .md-li { color: var(--accent-green); }
+
+    /* ZEN Overlay */
+    #zen-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      background: rgba(0,0,0,0.15);
+    }
+
+    /* Breathing Ring */
+    #zen-breathe {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    #zen-ring {
+      width: 0; height: 0;
+      border-radius: 50%;
+      border: 3px solid var(--accent-blue);
+      opacity: 0.5;
+      box-shadow: 0 0 40px rgba(110,164,212,0.15);
+    }
+    #zen-breathe-label {
+      font-size: 24px;
+      letter-spacing: 8px;
+      color: var(--text-dim);
+      opacity: 0.8;
+      text-transform: uppercase;
+    }
+    #zen-breathe-count {
+      font-size: 16px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      opacity: 0.4;
+    }
+    @keyframes zen-inhale {
+      from { width: 0; height: 0; opacity: 0.3; }
+      to   { width: 200px; height: 200px; opacity: 0.6; }
+    }
+    @keyframes zen-topup {
+      0%   { width: 200px; height: 200px; opacity: 0.6; }
+      50%  { opacity: 0.85; }
+      100% { width: 250px; height: 250px; opacity: 0.7; }
+    }
+    @keyframes zen-exhale {
+      from { width: 250px; height: 250px; opacity: 0.7; border-color: var(--accent-blue); }
+      to   { width: 0; height: 0; opacity: 0; border-color: transparent; }
+    }
+    #zen-ring.inhale { animation: zen-inhale 4s ease-in-out forwards; }
+    #zen-ring.topup  { animation: zen-topup  1s ease-in-out forwards; }
+    #zen-ring.exhale { animation: zen-exhale 7s ease-in-out forwards; }
+
+    /* Signal Scraper */
+    #zen-scraper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+    #zen-scraper-prompt {
+      font-size: 24px;
+      letter-spacing: 3px;
+      color: var(--text);
+      opacity: 0.8;
+      text-align: center;
+    }
+    #zen-scraper-input {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #zen-keyword-input {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--accent-blue);
+      color: var(--text);
+      font-size: 30px;
+      letter-spacing: 2px;
+      text-align: center;
+      width: 280px;
+      padding: 8px 4px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+    #zen-keyword-input:focus { border-bottom-color: var(--text); }
+    #zen-keyword-input::placeholder { color: var(--text-dim); opacity: 0.4; font-size: 13px; }
+    #zen-keyword-count {
+      font-size: 18px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+    }
+    #zen-keywords-display {
+      min-height: 50px;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    @keyframes evaporate {
+      0%   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+      50%  { opacity: 0.4; transform: translateY(-40px) scale(1.05); filter: blur(2px); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.15); filter: blur(6px); }
+    }
+    .zen-keyword {
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--accent-blue);
+      display: inline-block;
+    }
+    .zen-keyword.evaporate { animation: evaporate 3s ease-out forwards; }
+
+    /* ZEN Topic Step */
+    #zen-topic-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+    .zen-step-prompt {
+      font-size: 24px;
+      letter-spacing: 3px;
+      color: var(--text);
+      opacity: 0.8;
+    }
+    #zen-topic-input {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--accent-blue);
+      color: var(--text);
+      font-size: 30px;
+      letter-spacing: 2px;
+      text-align: center;
+      width: 360px;
+      padding: 8px 4px;
+      outline: none;
+      font-family: inherit;
+    }
+    #zen-topic-input:focus { border-bottom-color: var(--text); }
+    #zen-topic-input::placeholder { color: var(--text-dim); opacity: 0.4; font-size: 13px; }
+
+    /* ZEN Topic Bar */
+    #zen-topic-bar {
+      position: absolute;
+      top: 84px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      opacity: 0.4;
+      z-index: 101;
+      pointer-events: none;
+    }
+
+    /* ZEN Notify */
+    #zen-notify {
+      position: absolute;
+      bottom: 32px; right: 32px;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px 24px;
+      z-index: 300;
+      max-width: 360px;
+      backdrop-filter: blur(12px);
+      animation: zen-notify-in 0.4s ease-out;
+    }
+    @keyframes zen-notify-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #zen-notify-text {
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    #zen-notify-btns {
+      display: flex;
+      gap: 10px;
+    }
+    #zen-notify-btns button {
+      padding: 8px 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      font-size: 15px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #zen-notify-btns button:hover { background: rgba(255,255,255,0.1); }
+
+    /* ZEN Report */
+    #zen-report {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #zen-report-inner {
+      background: var(--bg);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 32px 40px;
+      max-width: 860px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    #zen-report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    #zen-report-header h2 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+    #zen-report-header button {
+      padding: 6px 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #zen-report-canvas {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+    }
+    #zen-report-stats {
+      font-size: 18px;
+      line-height: 2;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+    #zen-report-actions {
+      display: flex;
+      gap: 12px;
+    }
+    #zen-report-actions button {
+      padding: 10px 24px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #zen-report-actions button:hover { background: rgba(255,255,255,0.1); }
+
+    /* Complete msg */
+    #complete-msg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 64px; font-weight: 900;
+      letter-spacing: 10px;
+      color: var(--accent-gold);
+      text-shadow: 0 0 40px rgba(212,167,110,0.6);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      transition: opacity 0.3s;
+    }
+    #complete-msg.show { opacity: 1; }
+
+    /* Canvas (unused in ZEN but kept for structure) */
+    #vfx {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    /* BW overrides */
+    body.theme-bw #hud { border-bottom-color: rgba(0,0,0,0.1); }
+    body.theme-bw #hud-right button { border-color: rgba(0,0,0,0.15); background: rgba(0,0,0,0.04); }
+    body.theme-bw #hud-right button:hover { background: rgba(0,0,0,0.08); }
+    body.theme-bw #hud-right button.active { background: rgba(0,0,0,0.12); border-color: var(--accent-blue); }
+    body.theme-bw #btn-zen-timer-mode { border-color: rgba(0,0,0,0.1); }
+    body.theme-bw #zen-overlay { background: rgba(255,255,255,0.2); }
+    body.theme-bw #zen-keyword-input { border-bottom-color: var(--accent-blue); }
+    body.theme-bw #zen-keyword-input:focus { border-bottom-color: var(--text); }
+    body.theme-bw #zen-topic-input { border-bottom-color: var(--accent-blue); }
+    body.theme-bw #zen-topic-input:focus { border-bottom-color: var(--text); }
+    body.theme-bw #zen-notify { background: var(--surface); border-color: rgba(0,0,0,0.1); }
+    body.theme-bw #zen-notify-btns button { border-color: rgba(0,0,0,0.12); background: rgba(0,0,0,0.04); }
+    body.theme-bw #zen-report { background: rgba(255,255,255,0.7); }
+    body.theme-bw #zen-report-inner { border-color: rgba(0,0,0,0.1); }
+    body.theme-bw .cursor { background: var(--text); }
+  </style>
+</head>
+<body>
+
+  <div id="fcm-wrapper">
+    <div id="fcm-container">
+
+      <!-- HUD -->
+      <div id="hud">
+        <div id="hud-left"></div>
+        <div id="hud-center">
+          <div id="zen-timer" class="hidden">
+            <div id="zen-timer-value">00:00</div>
+            <button id="btn-zen-timer-mode" title="切換計時模式">⏱</button>
+          </div>
+        </div>
+        <div id="hud-right">
+          <button id="btn-copy" title="複製文字">COPY</button>
+          <button id="btn-theme" title="切換主題">BW</button>
+          <button id="btn-mute" title="靜音切換">🔊</button>
+        </div>
+      </div>
+
+      <!-- Typing Area -->
+      <div id="typing-area">
+
+        <!-- Free/Zen writing area -->
+        <div id="free-area">
+          <div id="input-display"></div>
+        </div>
+
+        <!-- ZEN Entry Overlay -->
+        <div id="zen-overlay" class="hidden">
+          <div id="zen-breathe" class="hidden">
+            <div id="zen-ring"></div>
+            <div id="zen-breathe-label"></div>
+            <div id="zen-breathe-count"></div>
+          </div>
+          <div id="zen-topic-step" class="hidden">
+            <div class="zen-step-prompt">這次要專注寫什麼？</div>
+            <input id="zen-topic-input" type="text" placeholder="輸入寫作主題，按 Enter 開始" autocomplete="off" disabled />
+          </div>
+          <div id="zen-scraper" class="hidden">
+            <div id="zen-scraper-prompt">現在腦中最吵的三個關鍵字是什麼？</div>
+            <div id="zen-scraper-input">
+              <input id="zen-keyword-input" type="text" placeholder="輸入關鍵字，按 Enter 送出" autocomplete="off" disabled />
+              <div id="zen-keyword-count">0 / 3</div>
+            </div>
+            <div id="zen-keywords-display"></div>
+          </div>
+        </div>
+
+        <textarea id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      </div>
+
+      <!-- ZEN Topic Bar -->
+      <div id="zen-topic-bar" class="hidden"></div>
+
+      <!-- ZEN Notify -->
+      <div id="zen-notify" class="hidden">
+        <div id="zen-notify-text"></div>
+        <div id="zen-notify-btns">
+          <button id="btn-zen-report">查看分析</button>
+          <button id="btn-zen-dismiss">繼續專注</button>
+        </div>
+      </div>
+
+      <!-- ZEN Report -->
+      <div id="zen-report" class="hidden">
+        <div id="zen-report-inner">
+          <div id="zen-report-header">
+            <h2>Insight Flow Report</h2>
+            <button id="btn-zen-report-close">CLOSE</button>
+          </div>
+          <canvas id="zen-report-canvas" width="800" height="300"></canvas>
+          <div id="zen-report-stats"></div>
+          <div id="zen-report-actions">
+            <button id="btn-zen-encrypt">加密存儲</button>
+            <button id="btn-zen-export">匯出文字</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="complete-msg">TIME</div>
+      <canvas id="vfx"></canvas>
+
+    </div>
+  </div>
+
+  <script>
+    // ── DOM ──
+    const hiddenInput       = document.getElementById('hidden-input');
+    const inputDisplay      = document.getElementById('input-display');
+    const freeArea          = document.getElementById('free-area');
+    const hudEl             = document.getElementById('hud');
+    const btnCopy           = document.getElementById('btn-copy');
+    const btnTheme          = document.getElementById('btn-theme');
+    const btnMute           = document.getElementById('btn-mute');
+    const typingArea        = document.getElementById('typing-area');
+    const completeMsg       = document.getElementById('complete-msg');
+    const canvas            = document.getElementById('vfx');
+    const ctx               = canvas.getContext('2d');
+
+    // ZEN DOM
+    const zenOverlay        = document.getElementById('zen-overlay');
+    const zenBreathe        = document.getElementById('zen-breathe');
+    const zenRing           = document.getElementById('zen-ring');
+    const zenBreatheLabel   = document.getElementById('zen-breathe-label');
+    const zenBreatheCount   = document.getElementById('zen-breathe-count');
+    const zenScraper        = document.getElementById('zen-scraper');
+    const zenKeywordInput   = document.getElementById('zen-keyword-input');
+    const zenKeywordCount   = document.getElementById('zen-keyword-count');
+    const zenKeywordsDisp   = document.getElementById('zen-keywords-display');
+    const zenTimerWrap      = document.getElementById('zen-timer');
+    const zenTimerValue     = document.getElementById('zen-timer-value');
+    const btnZenTimerMode   = document.getElementById('btn-zen-timer-mode');
+    const zenTopicStep      = document.getElementById('zen-topic-step');
+    const zenTopicInput     = document.getElementById('zen-topic-input');
+    const zenTopicBar       = document.getElementById('zen-topic-bar');
+    const zenNotify         = document.getElementById('zen-notify');
+    const zenNotifyText     = document.getElementById('zen-notify-text');
+    const btnZenReport      = document.getElementById('btn-zen-report');
+    const btnZenDismiss     = document.getElementById('btn-zen-dismiss');
+    const zenReportOverlay  = document.getElementById('zen-report');
+    const zenReportCanvas   = document.getElementById('zen-report-canvas');
+    const zenReportStats    = document.getElementById('zen-report-stats');
+    const btnZenReportClose = document.getElementById('btn-zen-report-close');
+    const btnZenEncrypt     = document.getElementById('btn-zen-encrypt');
+    const btnZenExport      = document.getElementById('btn-zen-export');
+
+    // ── State ──
+    let muted = false, themeBW = false;
+    let prevText = '', composingText = '', isComposing = false;
+    let processTimer = null, lastCommittedValue = '';
+
+    // ZEN state
+    let zenPhase = 'idle';
+    let zenKeywords = [];
+    let zenBreatheCycle = 0;
+    let zenTimerMode = 'stopwatch';
+    let zenTimerSeconds = 0;
+    let zenTimerInterval = null;
+    let zenTopic = '';
+    const ZEN_POMODORO_TOTAL = 25 * 60;
+    const ZEN_NOTIFY_MINS = [10, 30, 60];
+    let zenNotifiedMins = new Set();
+
+    const zenTrack = {
+      backspace_total: 0,
+      backspace_map: [],
+      input_velocity: [],
+      startTime: 0,
+      charTimestamps: [],
+    };
+
+    // ── Audio ──
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playTone(freq, dur, type = 'sine', vol = 0.08) {
+      if (muted || !audioCtx) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      g.gain.setValueAtTime(vol, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + dur / 1000);
+    }
+    function playBreatheTone(phase) {
+      ensureAudio();
+      if (phase === 'inhale') playTone(220, 3000, 'sine', 0.03);
+      else if (phase === 'exhale') playTone(180, 5000, 'sine', 0.02);
+    }
+
+    // ── Canvas (minimal, kept for structure) ──
+    const fcmContainer = document.getElementById('fcm-container');
+    function resizeCanvas() {
+      const rect = fcmContainer.getBoundingClientRect();
+      canvas.width  = rect.width  * devicePixelRatio;
+      canvas.height = rect.height * devicePixelRatio;
+      canvas.style.width  = rect.width  + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    function renderLoop(ts) { requestAnimationFrame(renderLoop); }
+    requestAnimationFrame(renderLoop);
+
+    // ── Helpers ──
+    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // ── Scroll ──
+    let userScrolling = false, scrollResetTimer = null;
+    function scrollFreeToCenter() {
+      const cursor = inputDisplay.querySelector('.cursor');
+      if (!cursor) return;
+      freeArea.scrollTo({ top: cursor.offsetTop - freeArea.clientHeight * 0.5, behavior: 'smooth' });
+    }
+
+    freeArea.addEventListener('wheel', () => {
+      userScrolling = true;
+      clearTimeout(scrollResetTimer);
+    }, { passive: true });
+
+    let dragStartY = null, dragStartScroll = null;
+    freeArea.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      dragStartY = e.clientY;
+      dragStartScroll = freeArea.scrollTop;
+      userScrolling = true;
+      clearTimeout(scrollResetTimer);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (dragStartY === null) return;
+      freeArea.scrollTop = dragStartScroll + (dragStartY - e.clientY);
+    });
+    document.addEventListener('mouseup', () => { dragStartY = null; });
+
+    // ── Render (ZEN path) ──
+    function renderFree(committed, composing, autoScroll) {
+      const before = committed.slice(0, hiddenInput.selectionStart);
+      const after  = committed.slice(hiddenInput.selectionStart);
+      let html = renderMarkdown(before) + '<span class="cursor"></span>' + renderMarkdown(after);
+      if (composing) {
+        html = renderMarkdown(before) + '<span class="composing">' + esc(composing) + '</span><span class="cursor"></span>' + renderMarkdown(after);
+      }
+      html = html.replace(/\n/g, '<br>');
+      inputDisplay.innerHTML = html;
+      if (autoScroll && !userScrolling) scrollFreeToCenter();
+    }
+
+    // ── Markdown ──
+    function renderMarkdown(text) {
+      const lines = text.split('\n');
+      let result = '';
+      for (const line of lines) {
+        let html = escLine(line);
+        if      (/^### /.test(line)) html = '<span class="md-h3">' + escLine(line.slice(4)) + '</span>';
+        else if (/^## /.test(line))  html = '<span class="md-h2">' + escLine(line.slice(3)) + '</span>';
+        else if (/^# /.test(line))   html = '<span class="md-h1">' + escLine(line.slice(2)) + '</span>';
+        else if (/^[-*] /.test(line)) html = '<span class="md-li">' + escLine(line) + '</span>';
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<span class="md-bold">**$1**</span>');
+        result += html + '\n';
+      }
+      return result;
+    }
+    function escLine(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ── Handle input (ZEN only) ──
+    function handleFreeChange(committed, wasDelete) {
+      ensureAudio();
+      userScrolling = false;
+      clearTimeout(scrollResetTimer);
+
+      if (wasDelete) {
+        zenTrack.backspace_total++;
+        zenTrack.backspace_map.push({ time: Date.now() - zenTrack.startTime, pos: [...committed].length });
+        renderFree(committed, '', true);
+        return;
+      }
+
+      const prevChars = [...prevText];
+      const newChars  = [...committed];
+      const added = newChars.length - prevChars.length;
+      if (added > 0) {
+        const now = Date.now();
+        for (let i = 0; i < added; i++) zenTrack.charTimestamps.push(now);
+        recordWPM();
+      }
+      renderFree(committed, '', true);
+    }
+
+    function recordWPM() {
+      const ts = zenTrack.charTimestamps;
+      if (ts.length < 2) return;
+      const now = Date.now();
+      const cutoff = now - 10000;
+      const recent = ts.filter(t => t > cutoff).length;
+      const wpm = Math.round((recent / 10) * 60);
+      const last = zenTrack.input_velocity[zenTrack.input_velocity.length - 1];
+      if (!last || (now - last.time) > 5000) {
+        zenTrack.input_velocity.push({ time: now - zenTrack.startTime, wpm });
+      }
+    }
+
+    // ── IME ──
+    hiddenInput.addEventListener('compositionstart', () => {
+      isComposing = true; composingText = '';
+      lastCommittedValue = hiddenInput.value;
+    });
+    hiddenInput.addEventListener('compositionupdate', (e) => {
+      composingText = e.data || '';
+      renderFree(lastCommittedValue, composingText, false);
+    });
+    hiddenInput.addEventListener('compositionend', () => {
+      isComposing = false; composingText = '';
+      clearTimeout(processTimer);
+      processTimer = setTimeout(processInput, 30);
+    });
+    hiddenInput.addEventListener('input', (e) => {
+      if (isComposing || e.isComposing) return;
+      clearTimeout(processTimer);
+      processTimer = setTimeout(processInput, 30);
+    });
+    hiddenInput.addEventListener('keyup', (e) => {
+      if (zenPhase !== 'typing') return;
+      const nav = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Shift'];
+      if (nav.includes(e.key) || e.shiftKey) renderFree(hiddenInput.value, isComposing ? composingText : '', false);
+    });
+
+    function processInput() {
+      const committed = hiddenInput.value;
+      if (committed === prevText) { renderFree(committed, '', false); return; }
+      const wasDelete = [...committed].length < [...prevText].length;
+      handleFreeChange(committed, wasDelete);
+      prevText = committed;
+      lastCommittedValue = committed;
+    }
+
+    // ── Focus ──
+    document.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+      if (zenPhase === 'scraper') zenKeywordInput.focus();
+      else hiddenInput.focus();
+    });
+
+    // ═══════════════════════════════════════
+    //  ZEN Entry Protocol
+    // ═══════════════════════════════════════
+
+    function startZenEntry() {
+      zenPhase = 'topic';
+      zenKeywords = [];
+      zenBreatheCycle = 0;
+      zenTopic = '';
+      zenNotifiedMins = new Set();
+      hiddenInput.disabled = true;
+
+      zenTrack.backspace_total = 0;
+      zenTrack.backspace_map = [];
+      zenTrack.input_velocity = [];
+      zenTrack.startTime = 0;
+      zenTrack.charTimestamps = [];
+
+      zenOverlay.classList.remove('hidden');
+      zenTopicStep.classList.remove('hidden');
+      zenBreathe.classList.add('hidden');
+      zenScraper.classList.add('hidden');
+
+      zenTopicInput.value = '';
+      zenTopicInput.disabled = false;
+      zenTopicInput.focus();
+    }
+
+    zenTopicInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      zenTopic = zenTopicInput.value.trim() || '自由書寫';
+      zenTopicInput.disabled = true;
+      zenTopicStep.classList.add('hidden');
+      zenPhase = 'breathe';
+      zenBreathe.classList.remove('hidden');
+      runBreatheCycle();
+    });
+
+    function runBreatheCycle() {
+      if (zenPhase !== 'breathe') return;
+      zenRing.classList.remove('inhale', 'topup', 'exhale');
+      zenRing.style.width = '0';
+      zenRing.style.height = '0';
+      zenBreatheCount.textContent = (zenBreatheCycle + 1) + ' / 2';
+
+      zenBreatheLabel.textContent = '吸氣';
+      zenRing.classList.add('inhale');
+      playBreatheTone('inhale');
+
+      setTimeout(() => {
+        if (zenPhase !== 'breathe') return;
+        zenRing.classList.remove('inhale');
+        zenBreatheLabel.textContent = '屏住';
+        zenRing.classList.add('topup');
+
+        setTimeout(() => {
+          if (zenPhase !== 'breathe') return;
+          zenRing.classList.remove('topup');
+          zenBreatheLabel.textContent = '吐氣';
+          zenRing.classList.add('exhale');
+          playBreatheTone('exhale');
+
+          setTimeout(() => {
+            if (zenPhase !== 'breathe') return;
+            zenRing.classList.remove('exhale');
+            zenBreatheCycle++;
+            if (zenBreatheCycle < 2) runBreatheCycle();
+            else startScraper();
+          }, 7000);
+        }, 1000);
+      }, 4000);
+    }
+
+    function startScraper() {
+      zenPhase = 'scraper';
+      zenKeywords = [];
+      zenBreathe.classList.add('hidden');
+      zenScraper.classList.remove('hidden');
+      zenKeywordInput.value = '';
+      zenKeywordInput.disabled = false;
+      zenKeywordCount.textContent = '0 / 3';
+      zenKeywordsDisp.innerHTML = '';
+      zenKeywordInput.focus();
+    }
+
+    zenKeywordInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      const kw = zenKeywordInput.value.trim();
+      if (!kw) return;
+
+      zenKeywords.push(kw);
+      zenKeywordInput.value = '';
+      zenKeywordCount.textContent = zenKeywords.length + ' / 3';
+
+      const span = document.createElement('span');
+      span.className = 'zen-keyword';
+      span.textContent = kw;
+      zenKeywordsDisp.appendChild(span);
+      requestAnimationFrame(() => span.classList.add('evaporate'));
+      playTone(440, 100, 'sine', 0.04);
+
+      if (zenKeywords.length >= 3) {
+        zenKeywordInput.disabled = true;
+        setTimeout(unlockZenTyping, 3000);
+      }
+    });
+
+    function unlockZenTyping() {
+      zenPhase = 'typing';
+      zenOverlay.classList.add('hidden');
+      zenScraper.classList.add('hidden');
+
+      hiddenInput.disabled = false;
+      hiddenInput.value = '';
+      prevText = '';
+      lastCommittedValue = '';
+      hiddenInput.focus();
+
+      zenTopicBar.textContent = zenTopic;
+      zenTopicBar.classList.remove('hidden');
+
+      zenTrack.startTime = Date.now();
+      zenTimerWrap.classList.remove('hidden');
+      startZenTimer();
+      renderFree('', '', false);
+    }
+
+    // ── ZEN Timer ──
+    function startZenTimer() {
+      stopZenTimer();
+      zenTimerSeconds = zenTimerMode === 'stopwatch' ? 0 : ZEN_POMODORO_TOTAL;
+      updateZenTimerDisplay();
+
+      zenTimerInterval = setInterval(() => {
+        if (zenTimerMode === 'stopwatch') {
+          zenTimerSeconds++;
+          checkZenNotify(zenTimerSeconds);
+        } else {
+          zenTimerSeconds--;
+          if (zenTimerSeconds <= 0) {
+            zenTimerSeconds = 0;
+            stopZenTimer();
+            onPomodoroComplete();
+          }
+        }
+        updateZenTimerDisplay();
+      }, 1000);
+    }
+
+    function stopZenTimer() {
+      if (zenTimerInterval) { clearInterval(zenTimerInterval); zenTimerInterval = null; }
+    }
+
+    function updateZenTimerDisplay() {
+      const m = Math.floor(Math.abs(zenTimerSeconds) / 60);
+      const s = Math.abs(zenTimerSeconds) % 60;
+      zenTimerValue.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+
+    function onPomodoroComplete() {
+      playTone(660, 300, 'sine', 0.08);
+      setTimeout(() => playTone(880, 400, 'sine', 0.08), 300);
+      completeMsg.textContent = 'TIME';
+      completeMsg.classList.add('show');
+      setTimeout(() => completeMsg.classList.remove('show'), 2000);
+    }
+
+    btnZenTimerMode.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zenTimerMode = zenTimerMode === 'stopwatch' ? 'pomodoro' : 'stopwatch';
+      btnZenTimerMode.textContent = zenTimerMode === 'stopwatch' ? '⏱' : '🍅';
+      if (zenPhase === 'typing') startZenTimer();
+      hiddenInput.focus();
+    });
+
+    // ── ZEN Notify ──
+    function checkZenNotify(secs) {
+      const mins = Math.floor(secs / 60);
+      for (const m of ZEN_NOTIFY_MINS) {
+        if (mins === m && !zenNotifiedMins.has(m)) {
+          zenNotifiedMins.add(m);
+          zenNotifyText.textContent = '已專注輸入 ' + mins + ' 分鐘，需要現在查看您的思緒流動分析報告嗎？';
+          zenNotify.classList.remove('hidden');
+          break;
+        }
+      }
+    }
+
+    btnZenDismiss.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zenNotify.classList.add('hidden');
+      hiddenInput.focus();
+    });
+
+    btnZenReport.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zenNotify.classList.add('hidden');
+      showZenReport();
+    });
+
+    // ── ZEN Report ──
+    function showZenReport() {
+      zenReportOverlay.classList.remove('hidden');
+      renderReportChart();
+      renderReportStats();
+    }
+
+    btnZenReportClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zenReportOverlay.classList.add('hidden');
+      hiddenInput.focus();
+    });
+
+    function renderReportChart() {
+      const c = zenReportCanvas;
+      const cctx = c.getContext('2d');
+      const dpr = devicePixelRatio || 1;
+      c.width = c.clientWidth * dpr;
+      c.height = c.clientHeight * dpr;
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const W = c.clientWidth, H = c.clientHeight;
+      cctx.clearRect(0, 0, W, H);
+
+      const vel = zenTrack.input_velocity;
+      const bsMap = zenTrack.backspace_map;
+      if (vel.length < 2) {
+        cctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-dim');
+        cctx.font = '14px sans-serif';
+        cctx.textAlign = 'center';
+        cctx.fillText('數據不足，請繼續輸入', W / 2, H / 2);
+        return;
+      }
+
+      const maxTime = vel[vel.length - 1].time;
+      const maxWPM  = Math.max(...vel.map(v => v.wpm), 1);
+      const pad = { top: 20, bottom: 30, left: 10, right: 10 };
+      const gW  = W - pad.left - pad.right;
+      const gH  = H - pad.top - pad.bottom;
+
+      cctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent-blue') || '#6ea4d4';
+      cctx.lineWidth = 2;
+      cctx.beginPath();
+      for (let i = 0; i < vel.length; i++) {
+        const x = pad.left + (vel[i].time / maxTime) * gW;
+        const y = pad.top + gH - (vel[i].wpm / maxWPM) * gH;
+        if (i === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+      }
+      cctx.stroke();
+
+      cctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent-blue') || '#6ea4d4';
+      cctx.font = '11px sans-serif';
+      cctx.fillText('WPM', pad.left + 20, pad.top + 12);
+
+      const bsColor = getComputedStyle(document.body).getPropertyValue('--accent-red') || '#d47070';
+      cctx.fillStyle = bsColor;
+      for (const bs of bsMap) {
+        const x = pad.left + (bs.time / maxTime) * gW;
+        cctx.globalAlpha = 0.4;
+        cctx.fillRect(x - 1, pad.top, 2, gH);
+      }
+      cctx.globalAlpha = 1;
+
+      cctx.fillStyle = bsColor;
+      cctx.fillText('退格', W - pad.right - 30, pad.top + 12);
+
+      cctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-dim') || '#888';
+      cctx.font = '10px sans-serif';
+      cctx.textAlign = 'center';
+      for (let t = 0; t <= maxTime; t += 60000) {
+        const x = pad.left + (t / maxTime) * gW;
+        cctx.fillText(Math.round(t / 60000) + 'm', x, H - 8);
+      }
+    }
+
+    function renderReportStats() {
+      const elapsed = zenTrack.startTime ? Math.round((Date.now() - zenTrack.startTime) / 1000) : 0;
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const text = hiddenInput.value || '';
+      const charCount = [...text].length;
+
+      const lines = text.split('\n');
+      const headings  = lines.filter(l => /^#{1,3}\s/.test(l)).length;
+      const listItems = lines.filter(l => /^[-*]\s/.test(l)).length;
+      const boldCount = (text.match(/\*\*[^*]+\*\*/g) || []).length;
+
+      const vel = zenTrack.input_velocity;
+      const avgWPM = vel.length > 0 ? Math.round(vel.reduce((s,v) => s + v.wpm, 0) / vel.length) : 0;
+
+      zenReportStats.innerHTML =
+        '<b>主題：</b>' + esc(zenTopic) + '<br>' +
+        '<b>專注時長：</b>' + mins + ' 分 ' + secs + ' 秒<br>' +
+        '<b>總字數：</b>' + charCount + '<br>' +
+        '<b>平均速度：</b>' + avgWPM + ' 字/分<br>' +
+        '<b>退格次數：</b>' + zenTrack.backspace_total + '<br>' +
+        '<b>標題數：</b>' + headings + '　<b>列表項：</b>' + listItems + '　<b>粗體：</b>' + boldCount;
+    }
+
+    // ── ZEN Encrypt / Export ──
+    async function zenEncryptAndSave() {
+      const text = hiddenInput.value || '';
+      const password = prompt('設定加密密碼（留空取消）：');
+      if (!password) return;
+
+      try {
+        const enc = new TextEncoder();
+        const combined = JSON.stringify({ text, topic: zenTopic, keywords: zenKeywords });
+        const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const key  = await crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+          keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
+        );
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(combined));
+
+        const record = {
+          salt: Array.from(salt), iv: Array.from(iv),
+          data: Array.from(new Uint8Array(encrypted)),
+          topic: zenTopic, timestamp: new Date().toISOString(),
+        };
+        const existing = JSON.parse(localStorage.getItem('zen_records') || '[]');
+        existing.push(record);
+        localStorage.setItem('zen_records', JSON.stringify(existing));
+
+        btnZenEncrypt.textContent = '已儲存';
+        setTimeout(() => { btnZenEncrypt.textContent = '加密存儲'; }, 2000);
+      } catch (err) {
+        alert('加密失敗：' + err.message);
+      }
+    }
+
+    btnZenEncrypt.addEventListener('click', (e) => { e.stopPropagation(); zenEncryptAndSave(); });
+
+    btnZenExport.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const text = hiddenInput.value || '';
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (zenTopic || 'zen') + '_' + new Date().toISOString().slice(0, 10) + '.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ── Buttons ──
+    btnCopy.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const text = hiddenInput.value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        btnCopy.textContent = 'OK!';
+        setTimeout(() => { btnCopy.textContent = 'COPY'; }, 1000);
+      });
+    });
+
+    btnTheme.addEventListener('click', (e) => {
+      e.stopPropagation();
+      themeBW = !themeBW;
+      document.body.classList.toggle('theme-bw', themeBW);
+      btnTheme.classList.toggle('active', themeBW);
+      hiddenInput.focus();
+    });
+
+    btnMute.addEventListener('click', (e) => {
+      e.stopPropagation();
+      muted = !muted;
+      btnMute.textContent = muted ? '🔇' : '🔊';
+      if (muted && audioCtx) audioCtx.suspend();
+      else if (!muted && audioCtx) audioCtx.resume();
+    });
+
+    // ── Init ──
+    renderFree('', '', false);
+    startZenEntry();
+  </script>
+</body>
+</html>

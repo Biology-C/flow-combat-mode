@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow Combat Mode — 心流打字</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========== 說明圖文區 ========== -->
+  <section id="hero">
+    <h1>Flow Combat Mode</h1>
+    <p class="hero-sub">心流打字體驗 — 讓每次敲擊都有回饋感</p>
+    <div class="hero-features">
+      <div class="hero-card">
+        <div class="hero-icon">⌨️</div>
+        <h3>FREE 自由模式</h3>
+        <p>自由打字，每個字都有粒子特效與 Combo 連段回饋。支援中文輸入法。</p>
+      </div>
+      <div class="hero-card">
+        <div class="hero-icon">📝</div>
+        <h3>TEST 測驗模式</h3>
+        <p>對照目標句子逐字比對，正確率即時統計，錯字紅色提示。</p>
+      </div>
+      <div class="hero-card">
+        <div class="hero-icon">🧘</div>
+        <h3>ZEN 專注模式</h3>
+        <p>呼吸引導 → 思緒清空 → 深度寫作。內建計時器與行為分析。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 輸入區容器 ========== -->
+  <section id="fcm-wrapper">
+    <div id="fcm-container">
+
+      <!-- HUD -->
+      <div id="hud">
+        <div id="hud-left">
+          <div class="hud-label">COMBO</div>
+          <div id="combo-value">0</div>
+          <div id="combo-bar-wrap"><div id="combo-bar"></div></div>
+        </div>
+        <div id="hud-center">
+          <div class="hud-label">SCORE</div>
+          <div id="score-value">0</div>
+          <div id="zen-timer" class="hidden">
+            <div id="zen-timer-value">00:00</div>
+            <button id="btn-zen-timer-mode" title="切換計時模式">⏱</button>
+          </div>
+        </div>
+        <div id="hud-right">
+          <div id="accuracy-wrap" class="hidden">
+            <div class="hud-label">正確率</div>
+            <div id="accuracy-value">100%</div>
+          </div>
+          <button id="btn-copy" title="複製文字">COPY</button>
+          <button id="btn-mode" title="切換模式">FREE</button>
+          <button id="btn-roller" title="滾筒效果">ROLL</button>
+          <button id="btn-theme" title="切換主題">BW</button>
+          <button id="btn-mute" title="靜音切換">🔊</button>
+        </div>
+      </div>
+
+      <!-- 打字區 -->
+      <div id="typing-area">
+
+        <!-- TEST 模式 -->
+        <div id="roller" class="hidden">
+          <div class="roller-row roller-prev" id="roller-prev"></div>
+          <div class="roller-row roller-current">
+            <div id="sentence-counter"></div>
+            <div id="target-display"></div>
+            <div id="test-input-display"></div>
+          </div>
+          <div class="roller-row roller-next" id="roller-next"></div>
+          <div id="test-nav">
+            <button id="btn-prev" title="上一題">&#9664; PREV</button>
+            <button id="btn-next" title="下一題">NEXT &#9654;</button>
+          </div>
+        </div>
+
+        <!-- FREE / ZEN 模式 -->
+        <div id="free-area">
+          <div id="input-display"></div>
+        </div>
+
+        <!-- ZEN Entry Overlay -->
+        <div id="zen-overlay" class="hidden">
+          <div id="zen-breathe" class="hidden">
+            <div id="zen-ring"></div>
+            <div id="zen-breathe-label"></div>
+            <div id="zen-breathe-count"></div>
+          </div>
+          <div id="zen-topic-step" class="hidden">
+            <div class="zen-step-prompt">這次要專注寫什麼？</div>
+            <input id="zen-topic-input" type="text" placeholder="輸入寫作主題，按 Enter 開始" autocomplete="off" disabled />
+          </div>
+          <div id="zen-scraper" class="hidden">
+            <div id="zen-scraper-prompt">現在腦中最吵的三個關鍵字是什麼？</div>
+            <div id="zen-scraper-input">
+              <input id="zen-keyword-input" type="text" placeholder="輸入關鍵字，按 Enter 送出" autocomplete="off" disabled />
+              <div id="zen-keyword-count">0 / 3</div>
+            </div>
+            <div id="zen-keywords-display"></div>
+          </div>
+        </div>
+
+        <textarea id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      </div>
+
+      <!-- ZEN Topic Bar -->
+      <div id="zen-topic-bar" class="hidden"></div>
+
+      <!-- ZEN Notify -->
+      <div id="zen-notify" class="hidden">
+        <div id="zen-notify-text"></div>
+        <div id="zen-notify-btns">
+          <button id="btn-zen-report">查看分析</button>
+          <button id="btn-zen-dismiss">繼續專注</button>
+        </div>
+      </div>
+
+      <!-- ZEN Report -->
+      <div id="zen-report" class="hidden">
+        <div id="zen-report-inner">
+          <div id="zen-report-header">
+            <h2>Insight Flow Report</h2>
+            <button id="btn-zen-report-close">CLOSE</button>
+          </div>
+          <canvas id="zen-report-canvas" width="800" height="300"></canvas>
+          <div id="zen-report-stats"></div>
+          <div id="zen-report-actions">
+            <button id="btn-zen-encrypt">加密存儲</button>
+            <button id="btn-zen-export">匯出文字</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tutorial -->
+      <div id="tutorial-overlay" class="hidden">
+        <div id="tutorial-spotlight"></div>
+        <div id="tutorial-tooltip">
+          <div id="tutorial-step-num"></div>
+          <div id="tutorial-text"></div>
+          <div id="tutorial-btns">
+            <button id="btn-tutorial-skip">跳過教學</button>
+            <button id="btn-tutorial-next">下一步 ▸</button>
+          </div>
+        </div>
+        <div id="tutorial-celebrate" class="hidden">✨</div>
+      </div>
+
+      <div id="complete-msg">PERFECT!</div>
+
+      <!-- 粒子 Canvas -->
+      <canvas id="vfx"></canvas>
+
+    </div><!-- /fcm-container -->
+  </section>
+
+  <!-- ========== 輸入區說明文字 ========== -->
+  <section id="instructions">
+    <h2>使用說明</h2>
+    <div class="instr-grid">
+      <div class="instr-item">
+        <div class="instr-key">FREE 模式</div>
+        <div class="instr-desc">直接開始打字。每個字都會產生粒子噴射效果。連續打字累積 Combo，顏色升階：藍 → 綠 → 金。按 Backspace 會中斷 Combo。</div>
+      </div>
+      <div class="instr-item">
+        <div class="instr-key">TEST 模式</div>
+        <div class="instr-desc">對照上方灰色目標句子輸入。正確字顯示綠色，錯字顯示紅色。全部正確才會進入下一題。可用 PREV / NEXT 切換題目。</div>
+      </div>
+      <div class="instr-item">
+        <div class="instr-key">ZEN 模式</div>
+        <div class="instr-desc">先設定寫作主題 → 2 次呼吸循環（跟著光圈吸氣 4 秒、屏住 1 秒、吐氣 7 秒）→ 輸入 3 個腦中雜念關鍵字清空 → 開始深度寫作。支援 Markdown 語法。</div>
+      </div>
+      <div class="instr-item">
+        <div class="instr-key">快捷功能</div>
+        <div class="instr-desc"><b>COPY</b> 複製文字 · <b>ROLL</b> 滾筒立體效果 · <b>BW</b> 白底主題 · <b>🔊</b> 靜音 · <b>Shift+方向鍵</b> 選取文字 · ZEN 模式下 <code># 標題</code>、<code>**粗體**</code>、<code>- 列表</code> 自動高亮</div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="site-footer">
+    Flow Combat Mode · Built for focus · <a href="https://github.com" target="_blank">GitHub</a>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
