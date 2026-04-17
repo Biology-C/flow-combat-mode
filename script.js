@@ -344,9 +344,6 @@ function getCharPosAt(container, idx) {
 //  FREE MODE
 // ═════════════════════════════════════
 
-let userScrolling = false;   // 使用者正在手動捲動
-let scrollResetTimer = null;
-
 // 取得 textarea 的選取範圍（轉為 codepoint index）
 function getSelection() {
   const val = hiddenInput.value;
@@ -357,20 +354,17 @@ function getSelection() {
   return { start: startIdx, end: endIdx };
 }
 
-function renderFree(committed, composing, autoScroll) {
+function renderFree(committed, composing) {
   // ZEN: Markdown 渲染路徑（無逐字 span，更乾淨）
   if (mode === 'ZEN') {
     const before = committed.slice(0, hiddenInput.selectionStart);
     const after = committed.slice(hiddenInput.selectionStart);
     let html = renderMarkdown(before) + '<span class="cursor"></span>' + renderMarkdown(after);
     if (composing) {
-      // 在游標位置插入組字預覽
       html = renderMarkdown(before) + '<span class="composing">' + esc(composing) + '</span><span class="cursor"></span>' + renderMarkdown(after);
     }
-    // 換行轉 <br>
     html = html.replace(/\n/g, '<br>');
     inputDisplay.innerHTML = html;
-    if (autoScroll && !userScrolling) scrollFreeToCenter();
     return;
   }
 
@@ -396,38 +390,16 @@ function renderFree(committed, composing, autoScroll) {
   if (!cursorInserted) html += '<span class="cursor"></span>';
 
   inputDisplay.innerHTML = html;
-  if (autoScroll && !userScrolling) scrollFreeToCenter();
 }
 
-function scrollFreeToCenter() {
-  const cursor = inputDisplay.querySelector('.cursor');
-  if (!cursor) return;
-  
-  const cursorRect = cursor.getBoundingClientRect();
-  const areaRect = freeArea.getBoundingClientRect();
-  
-  const cursorCenter = cursorRect.top + cursorRect.height / 2;
-  const areaCenter = areaRect.top + areaRect.height / 2;
-  
-  freeArea.scrollBy({ top: cursorCenter - areaCenter, behavior: 'smooth' });
-}
-
-// ── 手動捲動：滑鼠滾輪 + 拖曳 ──
-freeArea.addEventListener('wheel', () => {
-  userScrolling = true;
-  clearTimeout(scrollResetTimer);
-}, { passive: true });
-
+// ── 手動捲動：拖曳 ──
 let dragStartY = null;
 let dragStartScroll = null;
 
 freeArea.addEventListener('mousedown', (e) => {
-  // 只允許中間空白區域拖曳（不要和文字選取衝突）
   if (e.button !== 0) return;
   dragStartY = e.clientY;
   dragStartScroll = freeArea.scrollTop;
-  userScrolling = true;
-  clearTimeout(scrollResetTimer);
 });
 
 document.addEventListener('mousemove', (e) => {
@@ -457,9 +429,6 @@ hiddenInput.addEventListener('keyup', (e) => {
 
 function handleFreeChange(committed, wasDelete) {
   ensureAudio();
-  userScrolling = false;
-  clearTimeout(scrollResetTimer);
-
   const inZen = mode === 'ZEN';
 
   if (wasDelete) {
