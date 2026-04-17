@@ -414,17 +414,16 @@ document.addEventListener('mouseup', () => {
 
 // ── 選取變化時更新反白顯示 ──
 hiddenInput.addEventListener('select', () => {
-  if (!isFreeLike()) return;
-  renderFree(hiddenInput.value, isComposing ? composingText : '', false);
+  if (mode === 'MD') renderMDInput(hiddenInput.value, isComposing ? composingText : '');
+  else if (isFreeLike()) renderFree(hiddenInput.value, isComposing ? composingText : '', false);
 });
 
 // 方向鍵、Shift 選取、Home/End 等移動游標時刷新顯示
 hiddenInput.addEventListener('keyup', (e) => {
-  if (!isFreeLike()) return;
   const nav = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Shift'];
-  if (nav.includes(e.key) || e.shiftKey) {
-    renderFree(hiddenInput.value, isComposing ? composingText : '', false);
-  }
+  if (!nav.includes(e.key) && !e.shiftKey) return;
+  if (mode === 'MD') renderMDInput(hiddenInput.value, isComposing ? composingText : '');
+  else if (isFreeLike()) renderFree(hiddenInput.value, isComposing ? composingText : '', false);
 });
 
 function handleFreeChange(committed, wasDelete) {
@@ -1212,9 +1211,11 @@ function renderMDInput(committed, composing) {
   const targetChars = [...lesson.target];
   const typedChars = [...committed];
   const typedLen = typedChars.length;
+  const cursorPos = [...committed.slice(0, hiddenInput.selectionStart)].length;
 
   let inputHtml = '';
   for (let i = 0; i < typedLen; i++) {
+    if (!composing && i === cursorPos) inputHtml += '<span class="cursor"></span>';
     const ok = targetChars[i] !== undefined && typedChars[i] === targetChars[i];
     const cls = ok ? 'correct' : 'wrong';
     const spawn = (i === typedLen - 1 && !composing) ? ' char-spawn' : '';
@@ -1225,7 +1226,8 @@ function renderMDInput(committed, composing) {
   if (composing) {
     inputHtml += '<span class="composing">' + esc(composing) + '</span>';
   }
-  inputHtml += '<span class="cursor"></span>';
+  // cursor at end when at end or composing
+  if (composing || cursorPos >= typedLen) inputHtml += '<span class="cursor"></span>';
   mdInputDisp.innerHTML = inputHtml;
 
   let targetHtml = '';
