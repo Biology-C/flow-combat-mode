@@ -1148,10 +1148,18 @@ body.theme-bw #tutorial-tooltip {
 /* Preview rendered markdown */
 #md-preview {
   flex: 1;
+  min-height: 40px;
   overflow-y: auto;
   font-size: 15px;
   line-height: 1.7;
   color: var(--text);
+}
+
+.md-panel-divider {
+  flex-shrink: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 4px 0;
 }
 
 .md-preview-placeholder {
@@ -1190,24 +1198,24 @@ body.theme-bw #tutorial-tooltip {
   margin: 8px 0;
 }
 
-/* Target + Input display rows */
+/* Target + Input display rows (inside right panel) */
 #md-target-display {
   font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 15px;
-  line-height: 1.8;
+  font-size: 13px;
+  line-height: 1.7;
   color: var(--text-dim);
   letter-spacing: 1px;
-  min-height: 28px;
+  min-height: 24px;
   padding: 0 2px;
   flex-shrink: 0;
 }
 
 #md-input-display {
   font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.8;
-  min-height: 34px;
+  min-height: 30px;
   padding: 0 2px;
   flex-shrink: 0;
 }
@@ -1240,3 +1248,4 @@ body.theme-bw #md-instruction,
 body.theme-bw #md-preview-panel { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
 body.theme-bw #md-syntax-example { background: rgba(0,0,0,0.06); }
 body.theme-bw .md-hr { border-top-color: rgba(0,0,0,0.15); }
+body.theme-bw .md-panel-divider { background: rgba(0,0,0,0.1); }
