@@ -28,6 +28,11 @@
         <h3>ZEN 專注模式</h3>
         <p>呼吸引導 → 思緒清空 → 深度寫作。內建計時器與行為分析。</p>
       </div>
+      <div class="hero-card hero-card-md">
+        <div class="hero-icon">📖</div>
+        <h3>MD 語法練習</h3>
+        <p>逐關學習 Markdown 語法：標題、粗體、列表、引用等，邊打字邊即時預覽渲染結果。支援繁體中文輸入。</p>
+      </div>
     </div>
   </section>
 
@@ -37,6 +42,7 @@
 
       <!-- HUD -->
       <div id="hud">
+        <button id="btn-zen-exit" class="hidden" title="離開專注模式">🔙 EXIT ZEN</button>
         <div id="hud-left">
           <div class="hud-label">COMBO</div>
           <div id="combo-value">0</div>
@@ -84,6 +90,33 @@
         <!-- FREE / ZEN 模式 -->
         <div id="free-area">
           <div id="input-display"></div>
+        </div>
+
+        <!-- MD 語法練習模式 -->
+        <div id="md-area" class="hidden">
+          <div id="md-header">
+            <span id="md-lesson-num">關卡 1 / 10</span>
+            <span id="md-lesson-name"></span>
+            <code id="md-syntax-badge"></code>
+          </div>
+          <div id="md-panels">
+            <div id="md-instruction">
+              <div class="md-panel-title">語法說明</div>
+              <div id="md-instruction-desc"></div>
+              <pre id="md-syntax-example"></pre>
+              <div id="md-instruction-hint"></div>
+            </div>
+            <div id="md-preview-panel">
+              <div class="md-panel-title">即時預覽</div>
+              <div id="md-preview"></div>
+            </div>
+          </div>
+          <div id="md-target-display"></div>
+          <div id="md-input-display"></div>
+          <div id="md-nav">
+            <button id="btn-md-prev" title="上一關">&#9664; PREV</button>
+            <button id="btn-md-next" title="下一關">NEXT &#9654;</button>
+          </div>
         </div>
 
         <!-- ZEN Entry Overlay -->
@@ -175,6 +208,10 @@
       <div class="instr-item">
         <div class="instr-key">ZEN 模式</div>
         <div class="instr-desc">先設定寫作主題 → 2 次呼吸循環（跟著光圈吸氣 4 秒、屏住 1 秒、吐氣 7 秒）→ 輸入 3 個腦中雜念關鍵字清空 → 開始深度寫作。支援 Markdown 語法。</div>
+      </div>
+      <div class="instr-item">
+        <div class="instr-key">MD 語法練習</div>
+        <div class="instr-desc">共 10 個關卡，從 <code># 標題</code>、<code>**粗體**</code>、<code>*斜體*</code>、列表、引用到 <code>`程式碼`</code>，逐一練習 Markdown 語法。左欄說明語法規則，右欄即時渲染預覽。支援繁體中文輸入，完全吻合才會過關。</div>
       </div>
       <div class="instr-item">
         <div class="instr-key">快捷功能</div>

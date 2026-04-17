@@ -678,6 +678,25 @@ body.theme-bw .char.selected {
 #btn-zen-timer-mode:hover { background: rgba(255,255,255,0.06); }
 
 /* ── body.mode-zen overrides ── */
+#btn-zen-exit {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.3);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.2s;
+}
+#btn-zen-exit:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.4);
+}
+
 body.mode-zen #hud-left {
   opacity: 0.15;
   transition: opacity 0.5s;
@@ -1018,3 +1037,206 @@ body.theme-bw #tutorial-tooltip {
   border-color: rgba(0,0,0,0.1);
   box-shadow: 0 8px 32px rgba(0,0,0,0.1);
 }
+
+/* ═══════════════════════════════
+   MD MODE — Markdown 語法練習
+   ═══════════════════════════════ */
+#md-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 14px 20px 10px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+#md-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+#md-lesson-num {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#md-lesson-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+#md-syntax-badge {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  background: rgba(110,164,212,0.15);
+  color: var(--accent-blue);
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(110,164,212,0.25);
+  margin-left: auto;
+}
+
+#md-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#md-instruction,
+#md-preview-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.md-panel-title {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+#md-instruction-desc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+#md-instruction-desc code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  background: rgba(110,164,212,0.15);
+  color: var(--accent-blue);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+#md-syntax-example {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  background: rgba(0,0,0,0.2);
+  color: var(--accent-gold);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-gold);
+  white-space: pre-wrap;
+  flex-shrink: 0;
+}
+
+#md-instruction-hint {
+  font-size: 12px;
+  color: var(--accent-green);
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* Preview rendered markdown */
+#md-preview {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.md-preview-placeholder {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-style: italic;
+}
+
+#md-preview h1 { font-size: 22px; font-weight: 800; margin: 4px 0 6px; color: var(--text); }
+#md-preview h2 { font-size: 18px; font-weight: 700; margin: 4px 0 6px; color: var(--text); }
+#md-preview h3 { font-size: 15px; font-weight: 700; margin: 4px 0 6px; color: var(--text); }
+#md-preview p  { margin: 4px 0; }
+#md-preview strong { font-weight: 700; color: var(--accent-gold); }
+#md-preview em { font-style: italic; color: var(--accent-green); }
+#md-preview ul, #md-preview ol { padding-left: 20px; margin: 4px 0; }
+#md-preview li { margin: 2px 0; }
+#md-preview blockquote {
+  border-left: 3px solid var(--accent-blue);
+  padding: 4px 12px;
+  margin: 4px 0;
+  color: var(--text-dim);
+  font-style: italic;
+}
+.md-code-inline {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.88em;
+  background: rgba(110,164,212,0.15);
+  color: var(--accent-blue);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.md-link { color: var(--accent-blue); text-decoration: underline; cursor: default; }
+.md-hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  margin: 8px 0;
+}
+
+/* Target + Input display rows */
+#md-target-display {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  min-height: 28px;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+#md-input-display {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.8;
+  min-height: 34px;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+#md-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#md-nav button {
+  padding: 5px 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+#md-nav button:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+/* Hero card MD highlight */
+.hero-card-md { border-color: rgba(110,164,212,0.2); }
+
+/* BW theme overrides */
+body.theme-bw #md-instruction,
+body.theme-bw #md-preview-panel { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+body.theme-bw #md-syntax-example { background: rgba(0,0,0,0.06); }
+body.theme-bw .md-hr { border-top-color: rgba(0,0,0,0.15); }

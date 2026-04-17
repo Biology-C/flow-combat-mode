@@ -15,6 +15,79 @@ const SENTENCES = [
   '把每個條列重點分開各做一張投影片',
 ];
 
+const MD_LESSONS = [
+  {
+    name: '一級標題',
+    syntax: '# 標題文字',
+    desc: '在文字前加 <code>#</code> 和一個空格，建立最大的一級標題。',
+    hint: 'Tip：# 號後面必須有一個空格才能生效',
+    target: '# 心流打字體驗',
+  },
+  {
+    name: '二級標題',
+    syntax: '## 標題文字',
+    desc: '使用 <code>##</code> 建立二級標題，比一級小一號，常用於章節名稱。',
+    hint: 'Tip：兩個 # 號後面加空格',
+    target: '## 功能特色介紹',
+  },
+  {
+    name: '三級標題',
+    syntax: '### 標題文字',
+    desc: '使用 <code>###</code> 建立三級標題，常用於小節或項目標題。',
+    hint: 'Tip：三個 # 號後面加空格',
+    target: '### 使用方式說明',
+  },
+  {
+    name: '粗體文字',
+    syntax: '**文字**',
+    desc: '用兩個星號 <code>**</code> 包住文字，讓它顯示為粗體，突出重要資訊。',
+    hint: 'Tip：前後各兩個星號，中間不能有空格',
+    target: '這是 **重點文字** 的粗體範例',
+  },
+  {
+    name: '斜體文字',
+    syntax: '*文字*',
+    desc: '用一個星號 <code>*</code> 包住文字，讓它顯示為斜體，用於強調語氣。',
+    hint: 'Tip：前後各一個星號，注意不要打成兩個',
+    target: '這是 *斜體強調* 的效果展示',
+  },
+  {
+    name: '無序列表',
+    syntax: '- 項目文字',
+    desc: '在行首加 <code>-</code> 和空格，建立無序列表（圓點項目清單）。',
+    hint: 'Tip：減號後面一定要有一個空格',
+    target: '- 開始你的心流打字旅程',
+  },
+  {
+    name: '有序列表',
+    syntax: '1. 項目文字',
+    desc: '在行首加數字和句點 <code>1.</code>，建立有順序的編號清單。',
+    hint: 'Tip：數字後是英文句點，再加一個空格',
+    target: '1. 設定本次寫作主題',
+  },
+  {
+    name: '引用區塊',
+    syntax: '> 引用文字',
+    desc: '在行首加 <code>&gt;</code> 建立引用區塊，常用於名言、重要引述。',
+    hint: 'Tip：> 符號後面加一個空格',
+    target: '> 讓每次敲擊都充滿意義',
+  },
+  {
+    name: '行內程式碼',
+    syntax: '`程式碼`',
+    desc: '用反引號 <code>`</code> 包住指令或程式碼片段，反引號在鍵盤 Esc 下方、數字 1 左邊。',
+    hint: 'Tip：找到鍵盤左上角的反引號鍵 `',
+    target: '按下 `Enter` 鍵送出訊息',
+  },
+  {
+    name: '水平分隔線',
+    syntax: '---',
+    desc: '單獨一行輸入三個減號 <code>---</code>，建立水平分隔線，用於分隔段落。',
+    hint: 'Tip：只需三個減號，單獨一行，不能加其他文字',
+    target: '---',
+  },
+];
+
 // ── DOM ──
 const hiddenInput      = document.getElementById('hidden-input');
 const inputDisplay     = document.getElementById('input-display');
@@ -69,6 +142,21 @@ const zenReportStats   = document.getElementById('zen-report-stats');
 const btnZenReportClose = document.getElementById('btn-zen-report-close');
 const btnZenEncrypt    = document.getElementById('btn-zen-encrypt');
 const btnZenExport     = document.getElementById('btn-zen-export');
+const btnZenExit       = document.getElementById('btn-zen-exit');
+
+// MD DOM
+const mdArea         = document.getElementById('md-area');
+const mdLessonNumEl  = document.getElementById('md-lesson-num');
+const mdLessonNameEl = document.getElementById('md-lesson-name');
+const mdSyntaxBadge  = document.getElementById('md-syntax-badge');
+const mdInstrDesc    = document.getElementById('md-instruction-desc');
+const mdSyntaxEx     = document.getElementById('md-syntax-example');
+const mdInstrHint    = document.getElementById('md-instruction-hint');
+const mdPreview      = document.getElementById('md-preview');
+const mdTargetDisp   = document.getElementById('md-target-display');
+const mdInputDisp    = document.getElementById('md-input-display');
+const btnMDPrev      = document.getElementById('btn-md-prev');
+const btnMDNext      = document.getElementById('btn-md-next');
 
 // ── State ──
 let mode = 'FREE';
@@ -78,6 +166,7 @@ let muted = false;
 let totalCorrect = 0;
 let totalTyped = 0;
 let sentenceIdx = 0;
+let mdLessonIdx = 0;
 let currentTarget = '';
 let prevText = '';
 let composingText = '';
@@ -599,7 +688,8 @@ hiddenInput.addEventListener('compositionstart', () => {
 
 hiddenInput.addEventListener('compositionupdate', (e) => {
   composingText = e.data || '';
-  if (isFreeLike()) renderFree(lastCommittedValue, composingText, false);
+  if (mode === 'MD') renderMDInput(lastCommittedValue, composingText);
+  else if (isFreeLike()) renderFree(lastCommittedValue, composingText, false);
   else renderTest(lastCommittedValue, composingText);
 });
 
@@ -619,20 +709,22 @@ hiddenInput.addEventListener('input', (e) => {
 function processInput() {
   const committed = hiddenInput.value;
   if (committed === prevText) {
-    if (isFreeLike()) renderFree(committed, '', false);
+    if (mode === 'MD') renderMDInput(committed, '');
+    else if (isFreeLike()) renderFree(committed, '', false);
     else renderTest(committed, '');
     return;
   }
   const wasDelete = [...committed].length < [...prevText].length;
-  if (isFreeLike()) handleFreeChange(committed, wasDelete);
+  if (mode === 'MD') handleMDChange(committed, wasDelete);
+  else if (isFreeLike()) handleFreeChange(committed, wasDelete);
   else handleTestChange(committed, wasDelete);
   prevText = committed;
   lastCommittedValue = committed;
 }
 
-// ── Prevent exceeding target in TEST mode ──
+// ── Prevent exceeding target in TEST / MD mode ──
 hiddenInput.addEventListener('keydown', (e) => {
-  if (mode !== 'TEST') return;
+  if (mode !== 'TEST' && mode !== 'MD') return;
   if (isComposing || e.key === 'Process') return;
   const targetLen = [...currentTarget].length;
   const currentLen = [...hiddenInput.value].length;
@@ -1116,44 +1208,227 @@ function escLine(s) {
 }
 
 // ═════════════════════════════════════
-//  Mode Toggle (3-way: FREE → TEST → ZEN → FREE)
+//  MD MODE — Markdown 語法練習
 // ═════════════════════════════════════
 
-btnMode.addEventListener('click', (e) => {
+function applyInlineMD(text) {
+  text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  text = text.replace(/`([^`\n]+)`/g, '<code class="md-code-inline">$1</code>');
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" class="md-link" onclick="return false">$1</a>');
+  return text;
+}
+
+function renderMDHTML(text) {
+  if (!text) return '<span class="md-preview-placeholder">輸入 Markdown 語法，這裡即時渲染…</span>';
+  const lines = text.split('\n');
+  let html = '';
+  for (const raw of lines) {
+    const l = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if      (/^### /.test(l)) html += '<h3>' + applyInlineMD(l.slice(4)) + '</h3>';
+    else if (/^## /.test(l))  html += '<h2>' + applyInlineMD(l.slice(3)) + '</h2>';
+    else if (/^# /.test(l))   html += '<h1>' + applyInlineMD(l.slice(2)) + '</h1>';
+    else if (/^[-*+] /.test(l)) html += '<ul><li>' + applyInlineMD(l.slice(2)) + '</li></ul>';
+    else if (/^\d+\. /.test(l)) html += '<ol><li>' + applyInlineMD(l.replace(/^\d+\. /, '')) + '</li></ol>';
+    else if (/^> /.test(l))   html += '<blockquote>' + applyInlineMD(l.slice(2)) + '</blockquote>';
+    else if (/^---+$/.test(l))  html += '<hr class="md-hr">';
+    else if (l === '')          html += '<br>';
+    else                        html += '<p>' + applyInlineMD(l) + '</p>';
+  }
+  return html;
+}
+
+function renderMDInput(committed, composing) {
+  const lesson = MD_LESSONS[mdLessonIdx];
+  const targetChars = [...lesson.target];
+  const typedChars = [...committed];
+  const typedLen = typedChars.length;
+
+  let inputHtml = '';
+  for (let i = 0; i < typedLen; i++) {
+    const ok = targetChars[i] !== undefined && typedChars[i] === targetChars[i];
+    const cls = ok ? 'correct' : 'wrong';
+    const spawn = (i === typedLen - 1 && !composing) ? ' char-spawn' : '';
+    inputHtml += '<span class="char ' + cls + spawn + '">' + esc(typedChars[i]) + '</span>';
+  }
+  if (composing) inputHtml += '<span class="composing">' + esc(composing) + '</span>';
+  if (typedLen < targetChars.length) inputHtml += '<span class="cursor"></span>';
+  mdInputDisp.innerHTML = inputHtml;
+
+  let targetHtml = '';
+  for (let i = 0; i < targetChars.length; i++) {
+    let cls = 'target-pending';
+    if (i < typedLen) {
+      cls = (typedChars[i] === targetChars[i]) ? 'target-done' : 'target-error';
+    } else if (i === typedLen) {
+      cls = 'target-active';
+    }
+    targetHtml += '<span class="' + cls + '">' + esc(targetChars[i]) + '</span>';
+  }
+  mdTargetDisp.innerHTML = targetHtml;
+
+  mdPreview.innerHTML = renderMDHTML(committed || '');
+}
+
+function handleMDChange(committed, wasDelete) {
+  ensureAudio();
+  const lesson = MD_LESSONS[mdLessonIdx];
+  const targetChars = [...lesson.target];
+  const typedChars = [...committed];
+
+  if (wasDelete) {
+    breakCombo(); errorShake(); sfxError();
+    renderMDInput(committed, '');
+    requestAnimationFrame(() => {
+      const pos = typedChars.length > 0
+        ? getCharPosAt(mdInputDisp, typedChars.length - 1)
+        : getLastCharPos(mdInputDisp);
+      spawnParticles(pos.x, pos.y, 12, errColor(), 100);
+    });
+    return;
+  }
+
+  const prevChars = [...prevText];
+  const newCount = typedChars.length - prevChars.length;
+  for (let i = 0; i < newCount; i++) {
+    const idx = prevChars.length + i;
+    if (targetChars[idx] !== undefined && typedChars[idx] === targetChars[idx]) {
+      addCombo(); sfxCorrect();
+    } else {
+      breakCombo(); sfxWrong();
+    }
+  }
+
+  renderMDInput(committed, '');
+  requestAnimationFrame(() => {
+    const lastIdx = typedChars.length - 1;
+    if (lastIdx < 0) return;
+    const pos = getCharPosAt(mdInputDisp, lastIdx);
+    const ok = targetChars[lastIdx] !== undefined && typedChars[lastIdx] === targetChars[lastIdx];
+    if (ok) {
+      spawnParticles(pos.x, pos.y, 5 + Math.min(combo, 30), tierColor(getTier()));
+    } else {
+      spawnParticles(pos.x, pos.y, 8, errColor(), 60);
+      errorShake();
+    }
+  });
+
+  if (typedChars.length === targetChars.length) {
+    const allCorrect = typedChars.every((c, i) => c === targetChars[i]);
+    if (allCorrect) onMDLessonComplete();
+  }
+}
+
+function onMDLessonComplete() {
+  sfxComplete();
+  completeMsg.classList.add('show');
+  setTimeout(() => completeMsg.classList.remove('show'), 1500);
+  const r = mdInputDisp.getBoundingClientRect();
+  spawnParticles(r.left + r.width / 2, r.top + r.height / 2, 50, tierColor(getTier()), 150);
+  setTimeout(() => {
+    if (mdLessonIdx < MD_LESSONS.length - 1) {
+      loadMDLesson(mdLessonIdx + 1);
+    } else {
+      mdLessonNumEl.textContent = '全部完成！🎉';
+    }
+  }, 1200);
+}
+
+function loadMDLesson(idx) {
+  mdLessonIdx = idx;
+  const lesson = MD_LESSONS[idx];
+  currentTarget = lesson.target;
+
+  mdLessonNumEl.textContent = '關卡 ' + (idx + 1) + ' / ' + MD_LESSONS.length;
+  mdLessonNameEl.textContent = lesson.name;
+  mdSyntaxBadge.textContent = lesson.syntax;
+  mdInstrDesc.innerHTML = lesson.desc;
+  mdSyntaxEx.textContent = lesson.syntax;
+  mdInstrHint.textContent = lesson.hint;
+
+  hiddenInput.value = '';
+  prevText = '';
+  composingText = '';
+  lastCommittedValue = '';
+
+  renderMDInput('', '');
+
+  btnMDPrev.style.visibility = idx > 0 ? 'visible' : 'hidden';
+  btnMDNext.style.visibility = idx < MD_LESSONS.length - 1 ? 'visible' : 'hidden';
+
+  hiddenInput.focus();
+}
+
+function cleanupMD() {
+  mdLessonIdx = 0;
+}
+
+// ── MD Nav ──
+btnMDPrev.addEventListener('click', (e) => {
   e.stopPropagation();
+  if (mdLessonIdx > 0) loadMDLesson(mdLessonIdx - 1);
+});
+btnMDNext.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (mdLessonIdx < MD_LESSONS.length - 1) loadMDLesson(mdLessonIdx + 1);
+});
 
-  // Cleanup current mode
+// ═════════════════════════════════════
+//  Mode Toggle (4-way: FREE → TEST → ZEN → MD → FREE)
+// ═════════════════════════════════════
+
+function setMode(targetMode) {
   if (mode === 'ZEN') cleanupZen();
+  if (mode === 'MD') cleanupMD();
 
-  if (mode === 'FREE') {
-    // FREE → TEST
+  if (targetMode === 'TEST') {
     mode = 'TEST';
     btnMode.textContent = 'TEST';
     freeArea.classList.add('hidden');
+    mdArea.classList.add('hidden');
     roller.classList.remove('hidden');
     accuracyWrap.classList.remove('hidden');
+    document.body.classList.remove('mode-zen');
+    btnZenExit.classList.add('hidden');
     totalCorrect = 0; totalTyped = 0;
     loadSentence(0);
-  } else if (mode === 'TEST') {
-    // TEST → ZEN
+  } else if (targetMode === 'ZEN') {
     mode = 'ZEN';
     btnMode.textContent = 'ZEN';
     roller.classList.add('hidden');
+    mdArea.classList.add('hidden');
     freeArea.classList.remove('hidden');
     accuracyWrap.classList.add('hidden');
     document.body.classList.add('mode-zen');
+    btnZenExit.classList.remove('hidden');
     hiddenInput.value = '';
     prevText = '';
     lastCommittedValue = '';
     renderFree('', '', false);
     startZenEntry();
+  } else if (targetMode === 'MD') {
+    mode = 'MD';
+    btnMode.textContent = 'MD';
+    roller.classList.add('hidden');
+    freeArea.classList.add('hidden');
+    mdArea.classList.remove('hidden');
+    document.body.classList.remove('mode-zen');
+    accuracyWrap.classList.add('hidden');
+    btnZenExit.classList.add('hidden');
+    hiddenInput.value = '';
+    prevText = '';
+    lastCommittedValue = '';
+    loadMDLesson(0);
   } else {
-    // ZEN → FREE
+    // FREE
     mode = 'FREE';
     btnMode.textContent = 'FREE';
     roller.classList.add('hidden');
+    mdArea.classList.add('hidden');
     freeArea.classList.remove('hidden');
     accuracyWrap.classList.add('hidden');
+    document.body.classList.remove('mode-zen');
+    btnZenExit.classList.add('hidden');
     hiddenInput.value = '';
     prevText = '';
     lastCommittedValue = '';
@@ -1162,6 +1437,27 @@ btnMode.addEventListener('click', (e) => {
   combo = 0; score = 0;
   updateHUD();
   hiddenInput.focus();
+}
+
+btnMode.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const next = { FREE: 'TEST', TEST: 'ZEN', ZEN: 'MD', MD: 'FREE' };
+  setMode(next[mode]);
+});
+
+// HERO Card Click Setup
+document.querySelectorAll('.hero-card').forEach((card, index) => {
+  const modes = ['FREE', 'TEST', 'ZEN', 'MD'];
+  card.style.cursor = 'pointer';
+  card.addEventListener('click', () => {
+    document.getElementById('fcm-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setMode(modes[index]);
+  });
+});
+
+btnZenExit.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setMode('FREE');
 });
 
 // ── Copy ──
