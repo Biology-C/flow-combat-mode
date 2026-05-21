@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TEST — Flow Combat Mode</title>
+  <link rel="icon" href="data:," />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -377,6 +378,7 @@
     let prevText = '', composingText = '', isComposing = false;
     let processTimer = null, lastCommittedValue = '';
     let themeBW = false;
+    let isDeleteKeyActive = false; // 🌟 實體刪除鍵狀態防禦
 
     const COMBO_TIERS = [
       { min: 0,  color: '#6ea4d4', bwColor: '#4a90c4', mult: 1 },
@@ -627,6 +629,15 @@
       if (sentenceIdx < SENTENCES.length - 1) loadSentence(sentenceIdx + 1);
     });
 
+    function toHalfWidth(str) {
+      if (!str) return '';
+      return str
+        .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+        .replace(/　/g, ' ')
+        .replace(/。/g, '.')
+        .replace(/、/g, ',');
+    }
+
     // ── IME ──
     hiddenInput.addEventListener('compositionstart', () => {
       isComposing = true; composingText = '';
@@ -634,7 +645,20 @@
     });
     hiddenInput.addEventListener('compositionupdate', (e) => {
       composingText = e.data || '';
-      renderTest(lastCommittedValue, composingText);
+      const currentVal = hiddenInput.value;
+      let committed = lastCommittedValue;
+
+      const hCurrent = toHalfWidth(currentVal);
+      const hLast = toHalfWidth(lastCommittedValue);
+      const hComp = toHalfWidth(composingText);
+
+      if (composingText && hCurrent.endsWith(hComp)) {
+        committed = currentVal.slice(0, -composingText.length);
+      } else if (composingText && hLast.endsWith(hComp)) {
+        // 🌟 Slices off from lastCommittedValue if browser update lag occurs
+        committed = lastCommittedValue.slice(0, -composingText.length);
+      }
+      renderTest(committed, composingText);
     });
     hiddenInput.addEventListener('compositionend', () => {
       isComposing = false; composingText = '';
@@ -649,6 +673,9 @@
 
     // Prevent exceeding target length
     hiddenInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        isDeleteKeyActive = true;
+      }
       if (isComposing || e.key === 'Process') return;
       const targetLen  = [...currentTarget].length;
       const currentLen = [...hiddenInput.value].length;
@@ -656,11 +683,28 @@
         e.preventDefault();
       }
     });
+    hiddenInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        isDeleteKeyActive = false;
+      }
+    });
 
     function processInput() {
+      if (isComposing) return;
       const committed = hiddenInput.value;
       if (committed === prevText) { renderTest(committed, ''); return; }
+      
       const wasDelete = [...committed].length < [...prevText].length;
+      
+      // 🌟 IME 刪除同步安全閥：若字數減少但實體刪除鍵沒有被按下，判定為 IME 自動刪除，進行還原
+      if (wasDelete && !isDeleteKeyActive) {
+        console.log('[IME DEBUG] 攔截到 IME 自動同步刪除，還原數值至:', prevText);
+        hiddenInput.value = prevText;
+        lastCommittedValue = prevText;
+        renderTest(prevText, '');
+        return;
+      }
+
       handleTestChange(committed, wasDelete);
       prevText = committed;
       lastCommittedValue = committed;

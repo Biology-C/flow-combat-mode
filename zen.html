@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZEN — Flow Combat Mode</title>
+  <link rel="icon" href="data:," />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -630,6 +631,7 @@
     let muted = false, themeBW = false;
     let prevText = '', composingText = '', isComposing = false;
     let processTimer = null, lastCommittedValue = '';
+    let isDeleteKeyActive = false; // 🌟 實體刪除鍵狀態防禦
 
     // ZEN state
     let zenPhase = 'idle';
@@ -788,6 +790,15 @@
       }
     }
 
+    function toHalfWidth(str) {
+      if (!str) return '';
+      return str
+        .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+        .replace(/　/g, ' ')
+        .replace(/。/g, '.')
+        .replace(/、/g, ',');
+    }
+
     // ── IME ──
     hiddenInput.addEventListener('compositionstart', () => {
       isComposing = true; composingText = '';
@@ -795,28 +806,66 @@
     });
     hiddenInput.addEventListener('compositionupdate', (e) => {
       composingText = e.data || '';
-      renderFree(lastCommittedValue, composingText, false);
+      const currentVal = hiddenInput.value;
+      let committed = lastCommittedValue;
+
+      const hCurrent = toHalfWidth(currentVal);
+      const hLast = toHalfWidth(lastCommittedValue);
+      const hComp = toHalfWidth(composingText);
+
+      if (composingText && hCurrent.endsWith(hComp)) {
+        committed = currentVal.slice(0, -composingText.length);
+      } else if (composingText && hLast.endsWith(hComp)) {
+        // 🌟 Slices off from lastCommittedValue if browser update lag occurs
+        committed = lastCommittedValue.slice(0, -composingText.length);
+      }
+      renderFree(committed, composingText, false);
     });
     hiddenInput.addEventListener('compositionend', () => {
       isComposing = false; composingText = '';
       clearTimeout(processTimer);
       processTimer = setTimeout(processInput, 30);
     });
+    // 🌟 監聽實體刪除鍵以區分使用者手動刪除與 IME 的自動同步刪除
+    hiddenInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        isDeleteKeyActive = true;
+      }
+    });
+    hiddenInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        isDeleteKeyActive = false;
+      }
+    });
+
     hiddenInput.addEventListener('input', (e) => {
       if (isComposing || e.isComposing) return;
       clearTimeout(processTimer);
       processTimer = setTimeout(processInput, 30);
     });
     hiddenInput.addEventListener('keyup', (e) => {
+      if (isComposing) return; // 🌟 組字期間，阻斷 keyup 事件的繪製，防止重影
       if (zenPhase !== 'typing') return;
       const nav = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Shift'];
       if (nav.includes(e.key) || e.shiftKey) renderFree(hiddenInput.value, isComposing ? composingText : '', false);
     });
 
     function processInput() {
+      if (isComposing) return;
       const committed = hiddenInput.value;
       if (committed === prevText) { renderFree(committed, '', false); return; }
+      
       const wasDelete = [...committed].length < [...prevText].length;
+      
+      // 🌟 IME 刪除同步安全閥：若字數減少但實體刪除鍵沒有被按下，判定為 IME 自動刪除，進行還原
+      if (wasDelete && !isDeleteKeyActive) {
+        console.log('[IME DEBUG] 攔截到 IME 自動同步刪除，還原數值至:', prevText);
+        hiddenInput.value = prevText;
+        lastCommittedValue = prevText;
+        renderFree(prevText, '', false);
+        return;
+      }
+
       handleFreeChange(committed, wasDelete);
       prevText = committed;
       lastCommittedValue = committed;

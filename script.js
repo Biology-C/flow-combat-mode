@@ -272,6 +272,7 @@ let composingText = '';
 let isComposing = false;
 let processTimer = null;
 let lastCommittedValue = '';
+let isDeleteKeyActive = false; // 🌟 實體刪除鍵狀態防禦
 
 // ZEN state
 let zenPhase = 'idle';          // 'idle' | 'topic' | 'breathe' | 'scraper' | 'typing'
@@ -520,9 +521,25 @@ function rerenderCurrent(composing) {
   else if (isFreeLike())    renderFree(v, c);
 }
 
-hiddenInput.addEventListener('select', () => rerenderCurrent(''));
+// 🌟 監聽實體刪除鍵以區分使用者手動刪除與 IME 的自動同步刪除
+hiddenInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    isDeleteKeyActive = true;
+  }
+});
+hiddenInput.addEventListener('keyup', (e) => {
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    isDeleteKeyActive = false;
+  }
+});
+
+hiddenInput.addEventListener('select', () => {
+  if (isComposing) return; // 🌟 組字期間，阻斷 select 事件的繪製，防止重影
+  rerenderCurrent('');
+});
 
 hiddenInput.addEventListener('keyup', (e) => {
+  if (isComposing) return; // 🌟 組字期間，阻斷 keyup 事件的繪製，防止重影
   const nav = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Shift'];
   if (nav.includes(e.key) || e.shiftKey) rerenderCurrent('');
 });
@@ -752,6 +769,15 @@ btnNext.addEventListener('click', (e) => {
   if (sentenceIdx < SENTENCES.length - 1) loadSentence(sentenceIdx + 1);
 });
 
+function toHalfWidth(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .replace(/　/g, ' ')
+    .replace(/。/g, '.')
+    .replace(/、/g, ',');
+}
+
 // ═════════════════════════════════════
 //  IME Composition + Input
 // ═════════════════════════════════════
@@ -764,9 +790,22 @@ hiddenInput.addEventListener('compositionstart', () => {
 
 hiddenInput.addEventListener('compositionupdate', (e) => {
   composingText = e.data || '';
-  if (mode === 'MD') renderMDInput(lastCommittedValue, composingText);
-  else if (isFreeLike()) renderFree(lastCommittedValue, composingText, false);
-  else renderTest(lastCommittedValue, composingText);
+  const currentVal = hiddenInput.value;
+  let committed = lastCommittedValue;
+
+  const hCurrent = toHalfWidth(currentVal);
+  const hLast = toHalfWidth(lastCommittedValue);
+  const hComp = toHalfWidth(composingText);
+
+  if (composingText && hCurrent.endsWith(hComp)) {
+    committed = currentVal.slice(0, -composingText.length);
+  } else if (composingText && hLast.endsWith(hComp)) {
+    // 🌟 Slices off from lastCommittedValue if browser update lag occurs
+    committed = lastCommittedValue.slice(0, -composingText.length);
+  }
+  if (mode === 'MD') renderMDInput(committed, composingText);
+  else if (isFreeLike()) renderFree(committed, composingText, false);
+  else renderTest(committed, composingText);
 });
 
 hiddenInput.addEventListener('compositionend', () => {
@@ -783,6 +822,7 @@ hiddenInput.addEventListener('input', (e) => {
 });
 
 function processInput() {
+  if (isComposing) return;
   const committed = hiddenInput.value;
   if (committed === prevText) {
     if (mode === 'MD') renderMDInput(committed, '');
@@ -790,7 +830,20 @@ function processInput() {
     else renderTest(committed, '');
     return;
   }
+  
   const wasDelete = [...committed].length < [...prevText].length;
+  
+  // 🌟 IME 刪除同步安全閥：若字數減少但實體刪除鍵沒有被按下，判定為 IME 自動刪除，進行還原
+  if (wasDelete && !isDeleteKeyActive) {
+    console.log('[IME DEBUG] 攔截到 IME 自動同步刪除，還原數值至:', prevText);
+    hiddenInput.value = prevText;
+    lastCommittedValue = prevText;
+    if (mode === 'MD') renderMDInput(prevText, '');
+    else if (isFreeLike()) renderFree(prevText, '', false);
+    else renderTest(prevText, '');
+    return;
+  }
+
   if (mode === 'MD') handleMDChange(committed, wasDelete);
   else if (isFreeLike()) handleFreeChange(committed, wasDelete);
   else handleTestChange(committed, wasDelete);
