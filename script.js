@@ -454,6 +454,19 @@ function getSelection() {
   return { start: startIdx, end: endIdx };
 }
 
+function setSelectionIndex(charIdx) {
+  const val = hiddenInput.value;
+  let byteIdx = 0;
+  let count = 0;
+  for (const char of val) {
+    if (count >= charIdx) break;
+    byteIdx += char.length;
+    count++;
+  }
+  hiddenInput.selectionStart = byteIdx;
+  hiddenInput.selectionEnd = byteIdx;
+}
+
 function renderFree(committed, composing) {
   // ZEN: Markdown 渲染路徑（無逐字 span，更乾淨）
   if (mode === 'ZEN') {
@@ -659,11 +672,15 @@ function handleTestChange(committed, wasDelete) {
   const targetChars = [...currentTarget];
   const typedChars = [...committed];
 
+  const sel = getSelection();
+
   if (wasDelete) {
     breakCombo(); errorShake(); sfxError();
     renderTest(committed, '');
     requestAnimationFrame(() => {
-      const pos = typedChars.length > 0 ? getCharPosAt(testInputDisplay, typedChars.length - 1) : getLastCharPos(testInputDisplay);
+      const pos = sel.start > 0
+        ? getCharPosAt(testInputDisplay, sel.start - 1)
+        : getLastCharPos(testInputDisplay);
       spawnParticles(pos.x, pos.y, 12, errColor(), 100);
     });
     return;
@@ -671,8 +688,10 @@ function handleTestChange(committed, wasDelete) {
 
   const prevChars = [...prevText];
   const newCount = typedChars.length - prevChars.length;
+  const insStart = sel.start - newCount;
+
   for (let i = 0; i < newCount; i++) {
-    const idx = prevChars.length + i;
+    const idx = insStart + i;
     totalTyped++;
     if (targetChars[idx] !== undefined && typedChars[idx] === targetChars[idx]) {
       totalCorrect++; addCombo(); sfxCorrect();
@@ -683,7 +702,7 @@ function handleTestChange(committed, wasDelete) {
 
   renderTest(committed, '');
   requestAnimationFrame(() => {
-    const lastIdx = typedChars.length - 1;
+    const lastIdx = insStart + newCount - 1;
     if (lastIdx < 0) return;
     const pos = getCharPosAt(testInputDisplay, lastIdx);
     const ok = targetChars[lastIdx] !== undefined && typedChars[lastIdx] === targetChars[lastIdx];
@@ -767,6 +786,28 @@ btnPrev.addEventListener('click', (e) => {
 btnNext.addEventListener('click', (e) => {
   e.stopPropagation();
   if (sentenceIdx < SENTENCES.length - 1) loadSentence(sentenceIdx + 1);
+});
+
+testInputDisplay.addEventListener('click', (e) => {
+  if (mode !== 'TEST') return;
+  e.stopPropagation();
+  const charSpan = e.target.closest('.char');
+  if (charSpan) {
+    const spans = Array.from(testInputDisplay.querySelectorAll('.char'));
+    const idx = spans.indexOf(charSpan);
+    if (idx !== -1) {
+      const rect = charSpan.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const isBefore = clickX < rect.width / 2;
+      const cursorIdx = isBefore ? idx : idx + 1;
+      setSelectionIndex(cursorIdx);
+    }
+  } else {
+    const typedLen = [...hiddenInput.value].length;
+    setSelectionIndex(typedLen);
+  }
+  hiddenInput.focus({ preventScroll: true });
+  renderTest(hiddenInput.value, isComposing ? composingText : '');
 });
 
 function toHalfWidth(str) {
